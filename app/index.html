@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" id="themeColor" content="#EEF3F1">
+<script>
+  // Apply the saved theme before first paint so the page never flashes the wrong colors.
+  try { var t = localStorage.getItem("budget-jars-theme"); if (t && t !== "auto") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<meta name="description" content="Simple monthly budgeting with spending jars.">
+<title>Budget Jars</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Budget Jars">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+@font-face { font-family: "Fredoka"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/fredoka-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fredoka"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/fredoka-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fredoka"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/fredoka-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Figtree"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/figtree-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Figtree"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/figtree-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Figtree"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/figtree-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Figtree"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/figtree-latin-700-normal.woff2") format("woff2"); }
+html { color-scheme: light; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+
+/* Layout: one column — month summary on top, a grid of "jars" that drain as you spend, recent spends below; a floating Add button and bottom sheets for input. */
+:root {
+  --bg: #EEF3F1;
+  --surface: #FFFFFF;
+  --ink: #14221D;
+  --muted: #5B6C66;
+  --line: #D8E2DE;
+  --accent: #2F5BEA;
+  --accent-ink: #FFFFFF;
+  --danger: #D33A41;
+  --good: #1D8A57;
+  --scrim: rgba(12, 22, 18, .42);
+  --shadow: 0 1px 2px rgba(20, 34, 29, .06), 0 6px 20px rgba(20, 34, 29, .06);
+
+  --j0: #2FA36B; --j1: #F08A2B; --j2: #E4508A; --j3: #3A86F0;
+  --j4: #8B5CF6; --j5: #D6A400; --j6: #13A0A0; --j7: #E5484D;
+
+  --font-display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #0E1412; --surface: #17201C; --ink: #E8F0EC; --muted: #93A49D; --line: #2A3631;
+    --accent: #7F9BFF; --accent-ink: #0E1412; --danger: #FF6B70; --good: #4CC38A;
+    --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="midnight"] {
+  --bg: #000000; --surface: #121214; --ink: #F4F4F5; --muted: #9B9BA4; --line: #26262B;
+  --accent: #A78BFA; --accent-ink: #0B0B0D; --danger: #FF6B70; --good: #4ADE80;
+  --scrim: rgba(0, 0, 0, .72); --shadow: 0 0 0 1px #1E1E22;
+  --j0: #34D399; --j1: #FB923C; --j2: #F472B6; --j3: #60A5FA;
+  --j4: #A78BFA; --j5: #FACC15; --j6: #2DD4BF; --j7: #F87171;
+  --summary-bg: linear-gradient(160deg, #1A1A20, #0B0B0D);
+  color-scheme: dark;
+}
+:root[data-theme="sunny"] {
+  --bg: #FFFFFF; --surface: #FFFFFF; --ink: #1B1530; --muted: #6B6585; --line: #EEEAF6;
+  --accent: #FF4F8B; --accent-ink: #FFFFFF; --danger: #E5383B; --good: #16A34A;
+  --scrim: rgba(27, 21, 48, .35); --shadow: 0 2px 4px rgba(255, 79, 139, .06), 0 10px 28px rgba(80, 60, 160, .10);
+  --j0: #22C55E; --j1: #FF8A00; --j2: #FF3D7F; --j3: #2D9CFF;
+  --j4: #9B5CFF; --j5: #FFC400; --j6: #00C2B8; --j7: #FF4D4D;
+  --summary-bg: linear-gradient(135deg, #FFF3C4 0%, #FFD9E8 55%, #E3DBFF 100%);
+  --jar-border: #F1ECF8;
+  color-scheme: light;
+}
+:root[data-theme="holiday"] {
+  --bg: #0F2A1F; --surface: #163A2B; --ink: #FFF7E8; --muted: #BFD3C5; --line: #24513C;
+  --accent: #E23B4E; --accent-ink: #FFFFFF; --danger: #FF7A85; --good: #7EE2A8;
+  --scrim: rgba(5, 15, 10, .6); --shadow: 0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.25);
+  --j0: #5FD39A; --j1: #F2C14E; --j2: #FF8FA3; --j3: #8FD3FF;
+  --j4: #B48CFF; --j5: #E9E4D4; --j6: #FF9F6B; --j7: #E23B4E;
+  --summary-bg: linear-gradient(135deg, #9B1C2E, #5E1220);
+  --summary-muted: #F5C9CF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 120px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, .jar:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+
+/* Header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { font-size: 1.5rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
+.brand-mark { width: 32px; height: 32px; border-radius: 9px; display: block; }
+.month { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+.month button { border: 0; background: transparent; width: 36px; height: 36px; border-radius: 999px; font-size: 1.1rem; }
+.month button:hover:not(:disabled) { background: var(--bg); }
+.month button:disabled { opacity: .3; cursor: default; }
+.month-label { min-width: 130px; text-align: center; font-weight: 600; }
+
+/* Summary */
+.summary { background: var(--summary-bg, var(--surface)); border-radius: var(--r); padding: 20px; box-shadow: var(--shadow); display: grid; gap: 14px; }
+.sum-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.eyebrow { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.big { font-family: var(--font-display); font-size: clamp(2.2rem, 7vw, 3.2rem); font-weight: 600; line-height: 1.05; }
+.big.over { color: var(--danger); }
+.sum-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+.stat b { display: block; font-size: 1.15rem; }
+.stat span { color: var(--muted); font-size: .85rem; }
+.stack { height: 14px; border-radius: 999px; background: var(--bg); overflow: hidden; display: flex; }
+.stack i { display: block; height: 100%; }
+.pace { color: var(--muted); font-size: .9rem; }
+
+/* Jars */
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.section-head h2 { font-size: 1.25rem; }
+.link-btn { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 6px 2px; }
+.jars { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 14px; }
+.jar {
+  --c: var(--j0);
+  position: relative; border: 0; background: none; padding: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  transition: transform .15s ease;
+}
+.jar:hover { transform: translateY(-3px); }
+.jar:active { transform: scale(.97); }
+.jar:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 18px; }
+
+/* The jar drawing: glass body, lid, and a two-layer liquid that sloshes and pours to its level. */
+.jar-art { position: relative; width: 100%; max-width: 168px; }
+.jar-art svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 10px rgba(0,0,0,.10)); }
+.jar-art .glass { fill: color-mix(in srgb, var(--c) 8%, var(--surface)); }
+.jar-art .glass-edge { fill: none; stroke: color-mix(in srgb, var(--c) 45%, var(--line)); stroke-width: 2.5; }
+.jar.over .jar-art .glass-edge { stroke: var(--danger); stroke-width: 3; }
+.jar-art .lid { fill: color-mix(in srgb, var(--c) 55%, var(--ink)); }
+.jar-art .neck { fill: color-mix(in srgb, var(--c) 30%, var(--surface)); }
+.jar-art .shine { fill: #FFFFFF; opacity: .45; }
+.jar-art .liquid { transition: transform 1.2s cubic-bezier(.25, .9, .3, 1.15); }
+.jar-art .wave { fill: var(--c); }
+.jar-art .wave.back { opacity: .45; animation: slosh 5.5s linear infinite reverse; }
+.jar-art .wave.front { opacity: .9; animation: slosh 3.2s linear infinite; }
+@keyframes slosh { to { transform: translateX(50px); } }
+.jar-art .jar-emoji { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); font-size: 2.1rem; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+.jar-label {
+  position: absolute; left: 50%; top: 72%; transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--ink);
+  border-radius: 10px; padding: 3px 10px 4px; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; line-height: 1.1; white-space: nowrap;
+  max-width: 66%; overflow: hidden; text-overflow: ellipsis;
+}
+.jar-label small { display: block; font-family: var(--font-body); font-weight: 600; font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.jar.over .jar-label { color: var(--danger); }
+.jar-name { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jar-sub { color: var(--muted); font-size: .82rem; margin-top: -4px; }
+.pill { position: absolute; top: 4px; right: 6px; z-index: 1; font-size: .66rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+.pill.warn { background: color-mix(in srgb, var(--j5) 30%, var(--surface)); color: var(--ink); }
+.pill.bad { background: var(--danger); color: var(--surface); }
+.jar.add { justify-content: center; color: var(--muted); font-weight: 600; border: 2px dashed var(--line); border-radius: 22px; min-height: 200px; }
+.jar.add span:first-child { font-size: 2rem; line-height: 1; }
+
+/* The total: an open cardboard box of new mason jars, one per budget jar, with a shipping label. */
+.summary { background: none; box-shadow: none; padding: 0; gap: 10px; }
+.jarbox {
+  --box: #C9965B; --box-dark: #A87A45; --box-flap: #B8864E; --box-inside: #6E4B2A; --box-print: #8A5F33;
+  position: relative; width: 100%; max-width: 440px; margin: 0 auto;
+}
+:root[data-theme="holiday"] .jarbox { --box: #B3202F; --box-dark: #8E1B2A; --box-flap: #9B1C2E; --box-inside: #4A0E18; --box-print: #F2C14E; }
+.jarbox svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 14px rgba(0,0,0,.16)); }
+.jarbox .b-front { fill: var(--box); }
+.jarbox .b-rim { fill: var(--box-dark); }
+.jarbox .b-flap { fill: var(--box-flap); }
+.jarbox .b-inside { fill: var(--box-inside); }
+.jarbox .b-label { fill: #FFF8EC; }
+.jarbox .b-print { fill: var(--box-print); font: 700 15px var(--font-display); letter-spacing: 1px; }
+.jarbox .b-ribbon { fill: #F2C14E; display: none; }
+:root[data-theme="holiday"] .jarbox .b-ribbon { display: inline; }
+.jarbox .m-glass { fill: rgba(255, 255, 255, .62); stroke: rgba(90, 120, 140, .55); stroke-width: 1.5; }
+.jarbox .m-shine { fill: #FFFFFF; opacity: .8; }
+.jarbox .m-ridge { stroke: rgba(0, 0, 0, .28); stroke-width: 1.2; }
+.box-label {
+  position: absolute; left: 26.25%; width: 47.5%; top: 55.8%; height: 34.2%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #2A1E12;
+}
+.summary .box-label .eyebrow { color: #7A6650; font-size: .66rem; }
+.box-label .big { color: #2A1E12; font-size: clamp(1.35rem, 6.4vw, 2.1rem); }
+.summary .box-label.over .big, .summary .box-label.over .eyebrow { color: var(--danger); }
+.sum-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; color: var(--muted); font-size: .92rem; }
+.sum-line b { color: var(--ink); }
+.summary .stack { max-width: 440px; width: 100%; margin: 0 auto; height: 10px; background: var(--line); }
+.summary .pace { text-align: center; }
+
+/* Activity */
+.list { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row-emoji { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; font-size: 1.25rem; background: color-mix(in srgb, var(--c, var(--j0)) 20%, transparent); }
+.row-main { flex: 1; min-width: 0; }
+.row-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-meta { color: var(--muted); font-size: .84rem; }
+.row-amt { font-weight: 700; }
+.row-del { border: 0; background: none; color: var(--muted); width: 34px; height: 34px; border-radius: 10px; font-size: 1.1rem; flex: none; }
+.row-del:hover { background: var(--bg); color: var(--danger); }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+
+.notice { font-size: .85rem; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 10px 14px; }
+
+/* FAB */
+.fab {
+  position: fixed; z-index: 20;
+  right: max(20px, calc(env(safe-area-inset-right, 0px) + 20px));
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
+  border: 0; border-radius: 999px; padding: 16px 24px 16px 20px;
+  background: var(--accent); color: var(--accent-ink);
+  font-family: var(--font-display); font-weight: 600; font-size: 1.1rem;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent);
+  display: flex; align-items: center; gap: 8px;
+}
+.fab b { font-size: 1.5rem; line-height: 1; font-weight: 500; }
+
+/* Sheets */
+.scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.sheet {
+  background: var(--surface); color: var(--ink); width: 100%; max-width: 480px; max-height: 88vh; overflow: auto;
+  border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  animation: rise .22s ease-out;
+}
+@keyframes rise { from { transform: translateY(16px); opacity: .6; } }
+@media (max-width: 560px) {
+  .scrim { align-items: flex-end; padding: 0; }
+  .sheet { max-width: none; border-radius: 24px 24px 0 0; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
+}
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sheet-head h3 { font-size: 1.35rem; }
+.x { border: 0; background: var(--bg); width: 36px; height: 36px; border-radius: 999px; font-size: 1.1rem; flex: none; }
+label.f { display: grid; gap: 6px; font-weight: 600; font-size: .9rem; }
+input.t, select.t {
+  font: inherit; color: var(--ink); background: var(--bg); border: 2px solid transparent; border-radius: 14px;
+  padding: 12px 14px; width: 100%; font-weight: 500;
+}
+input.t:focus, select.t:focus { border-color: var(--accent); outline: none; }
+.amount-wrap { position: relative; }
+.amount-wrap span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-size: 2rem; color: var(--muted); }
+input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight: 600; padding-left: 42px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 2px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px;
+  font-weight: 600; display: flex; align-items: center; gap: 6px;
+}
+.chip[aria-pressed="true"] { border-color: var(--c, var(--accent)); background: color-mix(in srgb, var(--c, var(--accent)) 16%, var(--surface)); }
+.emojis { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; }
+.emojis button { border: 2px solid transparent; background: var(--bg); border-radius: 12px; height: 42px; font-size: 1.3rem; }
+.emojis button[aria-pressed="true"] { border-color: var(--accent); }
+.swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.swatches button { width: 34px; height: 34px; border-radius: 999px; border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--line); }
+.swatches button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .two { grid-template-columns: 1fr; } }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { border: 0; border-radius: 14px; padding: 13px 18px; font-weight: 700; background: var(--bg); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); flex: 1; }
+.btn.danger { background: transparent; color: var(--danger); }
+.btn.danger.solid { background: var(--danger); color: var(--surface); }
+.err { color: var(--danger); font-size: .88rem; font-weight: 600; }
+.detail-top { display: grid; gap: 8px; }
+.bar { height: 12px; border-radius: 999px; background: var(--bg); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--c); border-radius: 999px; }
+.detail-list { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.detail-list .row { padding: 10px 12px; }
+.confirm { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; }
+
+.toast {
+  position: fixed; z-index: 60; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+  background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600;
+  box-shadow: var(--shadow); max-width: calc(100% - 32px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jar-art .wave { animation: none !important; }
+  .jar-art .liquid { transition: none; }
+  .sheet { animation: none; }
+  .jar { transition: none; }
+}
+
+.summary .eyebrow, .summary .stat span, .summary .pace { color: var(--summary-muted, var(--muted)); }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); width: 46px; height: 46px; border-radius: 999px; font-size: 1.25rem; display: grid; place-items: center; }
+.themes { display: grid; gap: 10px; }
+.theme-opt {
+  display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
+  border: 2px solid var(--line); background: var(--surface); border-radius: 16px; padding: 12px 14px;
+}
+.theme-opt[aria-pressed="true"] { border-color: var(--accent); }
+.theme-opt b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.theme-opt span { color: var(--muted); font-size: .88rem; }
+.swatch { display: flex; flex: none; }
+.swatch i { width: 26px; height: 26px; border-radius: 999px; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.swatch i + i { margin-left: -8px; }
+:root[data-theme="holiday"] .brand::after { content: "🎄"; font-size: 1.2rem; }
+.wrap { position: relative; z-index: 1; }
+#snow { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+#snow i {
+  position: absolute; top: -12px; border-radius: 50%; background: #FFFFFF; opacity: .55;
+  animation: snow linear infinite;
+}
+@keyframes snow { to { transform: translate3d(var(--drift, 20px), 105vh, 0); } }
+@media (prefers-reduced-motion: reduce) { #snow { display: none; } }
+
+select.t { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 40px; }
+.foot { text-align: center; color: var(--muted); font-size: .82rem; margin: 0; }
+.foot a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand"><img class="brand-mark" src="icons/icon-192.png" alt="" width="32" height="32">Budget Jars</h1>
+    <div class="top-actions">
+      <div class="month" role="group" aria-label="Month">
+        <button id="prevMonth" aria-label="Previous month">‹</button>
+        <div class="month-label" id="monthLabel"></div>
+        <button id="nextMonth" aria-label="Next month">›</button>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Theme and currency">⚙️</button>
+    </div>
+  </header>
+
+  <section class="summary" id="summary" aria-live="polite"></section>
+
+  <section style="display:grid;gap:12px">
+    <div class="section-head"><h2>Your jars</h2><button class="link-btn" id="newBucketTop">+ New jar</button></div>
+    <div class="jars" id="jars"></div>
+  </section>
+
+  <section style="display:grid;gap:12px">
+    <div class="section-head"><h2>Spending this month</h2></div>
+    <div class="list" id="activity"></div>
+  </section>
+
+  <p class="foot"><a href="privacy.html">Privacy</a> · Your budget is stored only on this device.</p>
+</div>
+
+<button class="fab" id="fab"><b>+</b> Add spend</button>
+<div id="snow" aria-hidden="true" hidden></div>
+<div id="sheetRoot"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱"];
+  const PRESETS = [["Groceries","🛒"],["Eating out","🍜"],["Coffee","☕"],["Gas","⛽"],["Shopping","🛍️"],["Fun","🎉"],["Home","🏠"],["Pets","🐾"]];
+  const COLORS = 8;
+  const CURRENCIES = [
+    ["USD", "US dollar", "en-US"], ["EUR", "Euro", "en-IE"], ["GBP", "British pound", "en-GB"],
+    ["INR", "Indian rupee", "en-IN"], ["CAD", "Canadian dollar", "en-CA"], ["AUD", "Australian dollar", "en-AU"],
+    ["NZD", "New Zealand dollar", "en-NZ"], ["SGD", "Singapore dollar", "en-SG"], ["HKD", "Hong Kong dollar", "en-HK"],
+    ["AED", "UAE dirham", "en-AE"], ["SAR", "Saudi riyal", "en-SA"], ["JPY", "Japanese yen", "ja-JP"],
+    ["CNY", "Chinese yuan", "zh-CN"], ["KRW", "South Korean won", "ko-KR"], ["CHF", "Swiss franc", "de-CH"],
+    ["SEK", "Swedish krona", "sv-SE"], ["NOK", "Norwegian krone", "nb-NO"], ["DKK", "Danish krone", "da-DK"],
+    ["PLN", "Polish zloty", "pl-PL"], ["MXN", "Mexican peso", "es-MX"], ["BRL", "Brazilian real", "pt-BR"],
+    ["ZAR", "South African rand", "en-ZA"], ["PHP", "Philippine peso", "en-PH"], ["MYR", "Malaysian ringgit", "en-MY"],
+    ["THB", "Thai baht", "th-TH"], ["IDR", "Indonesian rupiah", "id-ID"], ["NGN", "Nigerian naira", "en-NG"],
+    ["PKR", "Pakistani rupee", "en-PK"], ["BDT", "Bangladeshi taka", "en-BD"], ["LKR", "Sri Lankan rupee", "en-LK"],
+  ];
+  let currency = { code: "USD", locale: "en-US", digits: 2, symbol: "$" };
+  function setCurrencyCode(code) {
+    const c = CURRENCIES.find((x) => x[0] === code) || CURRENCIES[0];
+    const f = new Intl.NumberFormat(c[2], { style: "currency", currency: c[0] });
+    currency = {
+      code: c[0], locale: c[2],
+      digits: f.resolvedOptions().maximumFractionDigits,
+      symbol: (f.formatToParts(0).find((p) => p.type === "currency") || {}).value || c[0],
+    };
+  }
+  try { const saved = localStorage.getItem("budget-jars-currency"); if (saved) setCurrencyCode(saved); } catch {}
+  const THEMES = [
+    { id: "auto", name: "Auto", desc: "Follows your phone's light or dark mode", sw: ["#EEF3F1", "#2F5BEA", "#0E1412"] },
+    { id: "sunny", name: "Sunny", desc: "Bright white with candy colors", sw: ["#FFFFFF", "#FF4F8B", "#FFC400"] },
+    { id: "midnight", name: "Midnight", desc: "True black, easy on the eyes at night", sw: ["#000000", "#A78BFA", "#34D399"] },
+    { id: "holiday", name: "Holiday", desc: "Evergreen, cranberry and gold, with snow", sw: ["#0F2A1F", "#E23B4E", "#F2C14E"] },
+  ];
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const money = (n) => {
+    const p = 10 ** currency.digits, v = Math.round(n * p) / p;
+    return v.toLocaleString(currency.locale, { style: "currency", currency: currency.code, minimumFractionDigits: v % 1 ? currency.digits : 0, maximumFractionDigits: currency.digits });
+  };
+  const pad = (n) => String(n).padStart(2, "0");
+  const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const curMonth = () => todayStr().slice(0, 7);
+  const monthName = (ym) => { const [y, m] = ym.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }); };
+  const shiftMonth = (ym, d) => { const [y, m] = ym.split("-").map(Number); const t = new Date(y, m - 1 + d, 1); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; };
+  const daysIn = (ym) => { const [y, m] = ym.split("-").map(Number); return new Date(y, m, 0).getDate(); };
+  const shortDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+  const parseAmt = (s) => { const n = parseFloat(String(s).replace(/[^0-9.]/g, "")); return isFinite(n) ? Math.round(n * 100) / 100 : NaN; };
+
+  const state = { buckets: [], spends: [], loaded: { buckets: false, spends: false }, month: curMonth(), readOnly: false };
+  let store = null;
+  let sheet = null; // { kind, ...props }
+
+  /* ---------- storage ---------- */
+  function localStore() {
+    const KEY = "budget-jars-v1";
+    let data = { buckets: {}, spends: {} };
+    try { const raw = localStorage.getItem(KEY); if (raw) data = JSON.parse(raw); } catch {}
+    const subs = { buckets: [], spends: [] };
+    const emit = (col) => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} subs[col].forEach((cb) => cb(Object.entries(data[col]).map(([id, v]) => ({ id, ...v })))); };
+    const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    return {
+      subscribe(col, cb) { subs[col].push(cb); setTimeout(() => emit(col)); },
+      async add(col, v) { data[col][id()] = v; emit(col); },
+      async update(col, i, v) { data[col][i] = { ...data[col][i], ...v }; emit(col); },
+      async remove(col, i) { delete data[col][i]; emit(col); },
+    };
+  }
+  async function write(fn, okMsg) {
+    try { await fn(); if (okMsg) toast(okMsg); return true; }
+    catch (e) {
+      if (e && e.code === "invalid_argument") { state.readOnly = true; toast("You can view this budget but not change it."); }
+      else if (e && e.code === "quota_exceeded") toast("Storage is full. Delete some old spends and try again.");
+      else toast("Couldn't save that. Check your connection and try again.");
+      return false;
+    }
+  }
+
+  /* ---------- derived ---------- */
+  const bucketColor = (b) => `var(--j${(b?.color ?? 0) % COLORS})`;
+  const monthSpends = () => state.spends.filter((s) => (s.date || "").slice(0, 7) === state.month);
+  function totals() {
+    const ms = monthSpends();
+    const by = {};
+    ms.forEach((s) => { by[s.bucketId] = (by[s.bucketId] || 0) + (Number(s.amount) || 0); });
+    return { ms, by };
+  }
+  const sortedBuckets = () => [...state.buckets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(b.name));
+
+  // Glass jar drawing. The liquid group starts at the jar's last level and pours to the new one.
+  const JAR_BODY = "M16 36 Q16 28 26 28 H74 Q84 28 84 36 V114 Q84 128 70 128 H30 Q16 128 16 114 Z";
+  const WAVE = "M-100 0 Q-87.5 -5 -75 0 T-50 0 T-25 0 T0 0 T25 0 T50 0 T75 0 T100 0 T125 0 T150 0 T175 0 T200 0 V140 H-100 Z";
+  const lastLevel = {};
+  const levelY = (f) => (f <= 0 ? 136 : 126 - 94 * Math.min(1, f)).toFixed(1);
+  function jarArt(key, frac, emoji) {
+    const clip = "jc-" + String(key).replace(/[^A-Za-z0-9_-]/g, "");
+    const from = lastLevel[key] ?? 0;
+    lastLevel[key] = frac;
+    return `<svg viewBox="0 0 100 132" aria-hidden="true">
+        <defs><clipPath id="${clip}"><path d="${JAR_BODY}"/></clipPath></defs>
+        <path class="glass" d="${JAR_BODY}"/>
+        <g clip-path="url(#${clip})">
+          <g class="liquid" style="transform:translateY(${levelY(from)}px)" data-to="${levelY(frac)}">
+            <path class="wave back" d="${WAVE}" transform="translate(-12 2)"/>
+            <path class="wave front" d="${WAVE}"/>
+          </g>
+        </g>
+        <path class="glass-edge" d="${JAR_BODY}"/>
+        <rect class="shine" x="24" y="42" width="7" height="46" rx="3.5"/>
+        <rect class="neck" x="27" y="20" width="46" height="10" rx="3"/>
+        <rect class="lid" x="22" y="6" width="56" height="17" rx="6"/>
+      </svg>
+      ${emoji ? `<span class="jar-emoji" aria-hidden="true">${esc(emoji)}</span>` : ""}`;
+  }
+  function pourJars() {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelectorAll(".liquid[data-to]").forEach((g) => { g.style.transform = `translateY(${g.dataset.to}px)`; g.removeAttribute("data-to"); });
+    }));
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    $("monthLabel").textContent = monthName(state.month);
+    $("nextMonth").disabled = state.month >= curMonth();
+    const { ms, by } = totals();
+    const buckets = sortedBuckets();
+    const loading = !state.loaded.buckets || !state.loaded.spends;
+
+    // summary
+    const limit = buckets.reduce((a, b) => a + (Number(b.limit) || 0), 0);
+    const spent = buckets.reduce((a, b) => a + (by[b.id] || 0), 0);
+    const left = limit - spent;
+    let pace = "";
+    if (state.month === curMonth() && limit > 0) {
+      const dLeft = daysIn(state.month) - new Date().getDate() + 1;
+      pace = left > 0 ? `${dLeft} day${dLeft === 1 ? "" : "s"} left in ${monthName(state.month).split(" ")[0]} · about ${money(left / dLeft)} a day to stay on track` : `${dLeft} day${dLeft === 1 ? "" : "s"} left and you're over budget`;
+    } else if (state.month < curMonth()) {
+      pace = left >= 0 ? `Finished ${money(left)} under budget` : `Finished ${money(-left)} over budget`;
+    }
+    const segs = limit > 0 ? buckets.map((b) => { const w = Math.min(by[b.id] || 0, b.limit) / Math.max(limit, spent) * 100; return w > 0 ? `<i style="width:${w}%;background:${bucketColor(b)}" title="${esc(b.name)}"></i>` : ""; }).join("") : "";
+    // Box of new mason jars: one jar per budget jar (at least 3), lids in each jar's color.
+    const n = Math.min(8, Math.max(3, buckets.length));
+    const slot = 268 / n, jw = Math.min(50, slot - 6);
+    let jarsSvg = "";
+    for (let i = 0; i < n; i++) {
+      const cx = 26 + slot * (i + 0.5), top = 22 + (i % 2) * 5, b = buckets[i];
+      const lid = b ? `color-mix(in srgb, ${bucketColor(b)} 85%, #000)` : "#B9C2C8";
+      const band = b ? bucketColor(b) : "#D5DCE0";
+      const x = cx - jw / 2;
+      jarsSvg += `<g>
+        <rect class="m-glass" x="${x.toFixed(1)}" y="${(top + 17).toFixed(1)}" width="${jw.toFixed(1)}" height="${(120 - top).toFixed(1)}" rx="${(jw * .24).toFixed(1)}"/>
+        <rect class="m-shine" x="${(x + jw * .16).toFixed(1)}" y="${(top + 28).toFixed(1)}" width="${(jw * .1).toFixed(1)}" height="22" rx="2"/>
+        <rect x="${(cx - jw * .38).toFixed(1)}" y="${(top + 6).toFixed(1)}" width="${(jw * .76).toFixed(1)}" height="12" rx="2" style="fill:${band}"/>
+        <line class="m-ridge" x1="${(cx - jw * .38).toFixed(1)}" y1="${(top + 10).toFixed(1)}" x2="${(cx + jw * .38).toFixed(1)}" y2="${(top + 10).toFixed(1)}"/>
+        <line class="m-ridge" x1="${(cx - jw * .38).toFixed(1)}" y1="${(top + 14).toFixed(1)}" x2="${(cx + jw * .38).toFixed(1)}" y2="${(top + 14).toFixed(1)}"/>
+        <rect x="${(cx - jw * .42).toFixed(1)}" y="${top.toFixed(1)}" width="${(jw * .84).toFixed(1)}" height="8" rx="3" style="fill:${lid}"/>
+      </g>`;
+    }
+    $("summary").innerHTML = loading ? `<div class="eyebrow" style="text-align:center">Loading your budget…</div>` : `
+      <div class="jarbox">
+        <svg viewBox="0 0 320 190" aria-hidden="true">
+          <polygon class="b-flap" points="16,86 64,86 40,44 4,56"/>
+          <polygon class="b-flap" points="256,86 304,86 316,56 280,44"/>
+          <rect class="b-inside" x="16" y="74" width="288" height="14"/>
+          ${jarsSvg}
+          <rect class="b-front" x="16" y="84" width="288" height="102" rx="5"/>
+          <rect class="b-rim" x="16" y="84" width="288" height="9" rx="3"/>
+          <rect class="b-ribbon" x="150" y="84" width="20" height="102"/>
+          <rect class="b-label" x="84" y="106" width="152" height="65" rx="7"/>
+          <text class="b-print" x="34" y="126">↑↑</text>
+          <text class="b-print" x="262" y="126">↑↑</text>
+        </svg>
+        <div class="box-label ${left < 0 ? "over" : ""}">
+          <div class="eyebrow">${left >= 0 ? "Left in all jars" : "Over budget by"}</div>
+          <div class="big num">${money(Math.abs(left))}</div>
+        </div>
+      </div>
+      <div class="sum-line num"><span><b>${money(spent)}</b> spent</span><span><b>${money(limit)}</b> budgeted</span><span><b>${buckets.length}</b> jar${buckets.length === 1 ? "" : "s"}</span></div>
+      <div class="stack" role="img" aria-label="${money(spent)} of ${money(limit)} spent">${segs}</div>
+      ${pace ? `<div class="pace">${pace}</div>` : ""}`;
+
+    // jars
+    $("jars").innerHTML = loading ? "" : buckets.map((b) => {
+      const sp = by[b.id] || 0, lim = Number(b.limit) || 0, lf = lim - sp;
+      const frac = lim > 0 ? Math.max(0, Math.min(1, lf / lim)) : 0;
+      const used = lim > 0 ? sp / lim : 0;
+      const pill = lf < 0 ? `<span class="pill bad">Over</span>` : used >= 0.85 ? `<span class="pill warn">Almost out</span>` : "";
+      return `<button class="jar ${lf < 0 ? "over" : ""}" style="--c:${bucketColor(b)}" data-open="${esc(b.id)}" aria-label="${esc(b.name)}: ${lf < 0 ? money(-lf) + " over" : money(lf) + " left"} of ${money(lim)}">
+        ${pill}
+        <div class="jar-art">
+          ${jarArt(b.id, frac, b.emoji || "🫙")}
+          <div class="jar-label num"><small>${lf < 0 ? "over" : "left"}</small>${lf < 0 ? "−" + money(-lf) : money(lf)}</div>
+        </div>
+        <div class="jar-name">${esc(b.name)}</div>
+        <div class="jar-sub num">of ${money(lim)}</div>
+      </button>`;
+    }).join("") + (loading ? "" : `<button class="jar add" data-new-bucket><span>+</span><span>${buckets.length ? "New jar" : "Make your first jar"}</span></button>`);
+    pourJars();
+
+    // activity
+    const bmap = Object.fromEntries(state.buckets.map((b) => [b.id, b]));
+    const rows = [...ms].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || 0) - (a.createdAt || 0));
+    $("activity").innerHTML = loading ? `<div class="empty">Loading…</div>` : rows.length ? rows.slice(0, 30).map((s) => spendRow(s, bmap[s.bucketId])).join("") : `<div class="empty">No spending logged for ${monthName(state.month)} yet. Tap <b>Add spend</b> to log your first one.</div>`;
+
+    $("fab").hidden = state.readOnly;
+    if (sheet && sheet.kind === "detail") renderSheet();
+  }
+  function spendRow(s, b) {
+    return `<div class="row" style="--c:${bucketColor(b)}">
+      <div class="row-emoji" aria-hidden="true">${esc(b?.emoji || "🫙")}</div>
+      <div class="row-main"><div class="row-title">${esc(s.note || b?.name || "Spend")}</div><div class="row-meta">${esc(b?.name || "Deleted jar")} · ${shortDate(s.date)}</div></div>
+      <div class="row-amt num">${money(Number(s.amount) || 0)}</div>
+      ${state.readOnly ? "" : `<button class="row-del" data-del-spend="${esc(s.id)}" aria-label="Delete this spend">×</button>`}
+    </div>`;
+  }
+
+  /* ---------- sheets ---------- */
+  // Sheets push a history entry so Android's back button closes them instead of the app.
+  function openSheet(s) { if (!sheet) history.pushState({ sheet: 1 }, ""); sheet = s; renderSheet(); setTimeout(() => { const f = document.querySelector("#sheetRoot [autofocus]"); if (f && window.matchMedia("(pointer:fine)").matches) f.focus(); }, 30); }
+  function hideSheet() { sheet = null; $("sheetRoot").innerHTML = ""; }
+  function closeSheet() { const had = !!sheet; hideSheet(); if (had && history.state && history.state.sheet) history.back(); }
+  window.addEventListener("popstate", hideSheet);
+
+  function renderSheet() {
+    if (!sheet) return;
+    let html = "";
+    if (sheet.kind === "spend") {
+      const buckets = sortedBuckets();
+      html = `<div class="sheet-head"><h3>Add spend</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <form id="spendForm" style="display:grid;gap:16px">
+          <label class="f">Amount
+            <div class="amount-wrap"><span>${esc(currency.symbol)}</span><input class="t amount num" id="spAmount" inputmode="decimal" autocomplete="off" placeholder="0" style="padding-left:${22 + currency.symbol.length * 20}px" value="${esc(sheet.amount || "")}" autofocus></div>
+          </label>
+          <div class="f" style="display:grid;gap:6px;font-weight:600;font-size:.9rem">Which jar?
+            <div class="chips">${buckets.map((b) => `<button type="button" class="chip" style="--c:${bucketColor(b)}" data-pick="${esc(b.id)}" aria-pressed="${sheet.bucketId === b.id}">${esc(b.emoji || "🫙")} ${esc(b.name)}</button>`).join("")}</div>
+          </div>
+          <div class="two">
+            <label class="f">What was it? <input class="t" id="spNote" placeholder="Trader Joe's" maxlength="80" value="${esc(sheet.note || "")}"></label>
+            <label class="f">Date <input class="t" id="spDate" type="date" value="${esc(sheet.date || todayStr())}"></label>
+          </div>
+          ${sheet.error ? `<div class="err">${esc(sheet.error)}</div>` : ""}
+          <div class="actions"><button class="btn primary" type="submit">Add spend</button></div>
+        </form>`;
+    } else if (sheet.kind === "bucket") {
+      const b = sheet.draft;
+      html = `<div class="sheet-head"><h3>${sheet.id ? "Edit jar" : "New jar"}</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <form id="bucketForm" style="display:grid;gap:16px">
+          ${sheet.id ? "" : `<div class="chips">${PRESETS.filter(([n]) => !state.buckets.some((x) => x.name.toLowerCase() === n.toLowerCase())).map(([n, e]) => `<button type="button" class="chip" data-preset="${esc(n)}|${e}">${e} ${esc(n)}</button>`).join("")}</div>`}
+          <div class="two">
+            <label class="f">Name <input class="t" id="bkName" maxlength="40" placeholder="Groceries" value="${esc(b.name)}" autofocus></label>
+            <label class="f">Monthly limit <div class="amount-wrap"><span style="font-size:1.1rem;left:14px">${esc(currency.symbol)}</span><input class="t num" id="bkLimit" inputmode="decimal" placeholder="600" style="padding-left:${18 + currency.symbol.length * 11}px" value="${esc(b.limit)}"></div></label>
+          </div>
+          <div class="f" style="display:grid;gap:6px;font-weight:600;font-size:.9rem">Icon
+            <div class="emojis">${EMOJIS.map((e) => `<button type="button" data-emoji="${e}" aria-pressed="${b.emoji === e}" aria-label="${e}">${e}</button>`).join("")}</div>
+          </div>
+          <div class="f" style="display:grid;gap:6px;font-weight:600;font-size:.9rem">Color
+            <div class="swatches">${Array.from({ length: COLORS }, (_, i) => `<button type="button" data-color="${i}" style="background:var(--j${i})" aria-pressed="${b.color === i}" aria-label="Color ${i + 1}"></button>`).join("")}</div>
+          </div>
+          ${sheet.error ? `<div class="err">${esc(sheet.error)}</div>` : ""}
+          <div class="actions"><button class="btn primary" type="submit">${sheet.id ? "Save jar" : "Create jar"}</button></div>
+        </form>`;
+    } else if (sheet.kind === "settings") {
+      const cur = currentTheme();
+      html = `<div class="sheet-head"><h3>Settings</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <div class="f" style="display:grid;gap:8px;font-weight:600;font-size:.9rem">Theme
+          <div class="themes">${THEMES.map((th) => `<button class="theme-opt" data-pick-theme="${th.id}" aria-pressed="${cur === th.id}">
+            <span class="swatch" aria-hidden="true">${th.sw.map((c) => `<i style="background:${c}"></i>`).join("")}</span>
+            <span><b>${th.name}</b><span>${th.desc}</span></span>
+          </button>`).join("")}</div>
+        </div>
+        <label class="f">Currency
+          <select class="t" id="curSel">${CURRENCIES.map(([code, name]) => `<option value="${code}" ${code === currency.code ? "selected" : ""}>${code} · ${name}</option>`).join("")}</select>
+          <span class="row-meta" style="font-weight:400">Example: ${esc(money(1234.5))}. Changing currency relabels your amounts; it doesn't convert them.</span>
+        </label>`;
+    } else if (sheet.kind === "detail") {
+      const b = state.buckets.find((x) => x.id === sheet.id);
+      if (!b) { closeSheet(); return; }
+      const { ms, by } = totals();
+      const sp = by[b.id] || 0, lim = Number(b.limit) || 0, lf = lim - sp;
+      const list = ms.filter((s) => s.bucketId === b.id).sort((a, c) => (c.date || "").localeCompare(a.date || "") || (c.createdAt || 0) - (a.createdAt || 0));
+      const all = state.spends.filter((s) => s.bucketId === b.id).length;
+      html = `<div class="sheet-head"><h3>${esc(b.emoji || "🫙")} ${esc(b.name)}</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <div class="detail-top" style="--c:${bucketColor(b)}">
+          <div class="eyebrow">${monthName(state.month)}</div>
+          <div class="big num ${lf < 0 ? "over" : ""}" style="font-size:2.4rem">${lf < 0 ? money(-lf) + " over" : money(lf) + " left"}</div>
+          <div class="bar"><i style="width:${lim > 0 ? Math.min(100, sp / lim * 100) : 0}%"></i></div>
+          <div class="pace num">${money(sp)} spent of ${money(lim)}</div>
+        </div>
+        <div class="detail-list">${list.length ? list.map((s) => spendRow(s, b)).join("") : `<div class="empty">Nothing spent from this jar in ${monthName(state.month).split(" ")[0]}.</div>`}</div>
+        ${state.readOnly ? "" : sheet.confirmDelete ? `<div class="confirm"><div>Delete <b>${esc(b.name)}</b>${all ? ` and its ${all} logged spend${all === 1 ? "" : "s"} (all months)` : ""}? This can't be undone.</div>
+          <div class="actions"><button class="btn danger solid" data-delete-bucket-yes>Delete jar</button><button class="btn" data-delete-bucket-no>Keep it</button></div></div>`
+        : `<div class="actions"><button class="btn primary" data-spend-in="${esc(b.id)}">Add spend here</button><button class="btn" data-edit="${esc(b.id)}">Edit</button><button class="btn danger" data-delete-bucket>Delete</button></div>`}`;
+    }
+    const active = document.activeElement && document.activeElement.id;
+    $("sheetRoot").innerHTML = `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+    if (active && $(active)) $(active).focus();
+  }
+
+  // keep typed values in the sheet state so re-renders don't lose them
+  document.addEventListener("input", (e) => {
+    if (!sheet) return;
+    const t = e.target;
+    if (t.id === "spAmount") sheet.amount = t.value;
+    if (t.id === "spNote") sheet.note = t.value;
+    if (t.id === "spDate") sheet.date = t.value;
+    if (t.id === "bkName") sheet.draft.name = t.value;
+    if (t.id === "bkLimit") sheet.draft.limit = t.value;
+  });
+
+  document.addEventListener("click", async (e) => {
+    const t = e.target.closest("button, [data-scrim]");
+    if (!t) return;
+    if (t.matches("[data-scrim]") && e.target === t) return closeSheet();
+    if (t.matches("[data-close]")) return closeSheet();
+    if (t.id === "prevMonth") { state.month = shiftMonth(state.month, -1); return render(); }
+    if (t.id === "nextMonth") { state.month = shiftMonth(state.month, 1); return render(); }
+    if (t.id === "fab") return openAddSpend();
+    if (t.id === "settingsBtn") return openSheet({ kind: "settings" });
+    if (t.dataset.pickTheme) { applyTheme(t.dataset.pickTheme); return renderSheet(); }
+    if (t.id === "newBucketTop" || t.matches("[data-new-bucket]")) return openBucket();
+    if (t.dataset.open) return openSheet({ kind: "detail", id: t.dataset.open });
+    if (t.dataset.spendIn) return openAddSpend(t.dataset.spendIn);
+    if (t.dataset.edit) return openBucket(t.dataset.edit);
+    if (t.dataset.pick) { sheet.bucketId = t.dataset.pick; sheet.error = ""; return renderSheet(); }
+    if (t.dataset.emoji) { sheet.draft.emoji = t.dataset.emoji; return renderSheet(); }
+    if (t.dataset.color) { sheet.draft.color = Number(t.dataset.color); return renderSheet(); }
+    if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; return renderSheet(); }
+    if (t.matches("[data-delete-bucket]")) { sheet.confirmDelete = true; return renderSheet(); }
+    if (t.matches("[data-delete-bucket-no]")) { sheet.confirmDelete = false; return renderSheet(); }
+    if (t.matches("[data-delete-bucket-yes]")) {
+      const id = sheet.id, b = state.buckets.find((x) => x.id === id);
+      closeSheet();
+      const spends = state.spends.filter((s) => s.bucketId === id);
+      await write(async () => { for (const s of spends) await store.remove("spends", s.id); await store.remove("buckets", id); }, `Deleted ${b ? b.name : "jar"}`);
+      return;
+    }
+    if (t.dataset.delSpend) {
+      const s = state.spends.find((x) => x.id === t.dataset.delSpend);
+      if (!s) return;
+      const undo = { ...s }; delete undo.id;
+      await write(() => store.remove("spends", s.id));
+      toastUndo(`Removed ${money(Number(s.amount) || 0)}`, () => write(() => store.add("spends", undo), "Restored"));
+    }
+  });
+
+  document.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (e.target.id === "spendForm") {
+      const amt = parseAmt(sheet.amount);
+      if (!(amt > 0)) { sheet.error = "Enter an amount above $0."; return renderSheet(); }
+      if (!sheet.bucketId) { sheet.error = "Pick a jar for this spend."; return renderSheet(); }
+      const b = state.buckets.find((x) => x.id === sheet.bucketId);
+      const data = { bucketId: sheet.bucketId, amount: amt, note: (sheet.note || "").trim(), date: sheet.date || todayStr(), createdAt: Date.now() };
+      closeSheet();
+      if (data.date.slice(0, 7) !== state.month) state.month = data.date.slice(0, 7);
+      await write(() => store.add("spends", data), `Added ${money(amt)} to ${b ? b.name : "jar"}`);
+    }
+    if (e.target.id === "bucketForm") {
+      const d = sheet.draft, name = (d.name || "").trim(), lim = parseAmt(d.limit);
+      if (!name) { sheet.error = "Give this jar a name."; return renderSheet(); }
+      if (!(lim >= 0)) { sheet.error = "Enter a monthly limit, like 300."; return renderSheet(); }
+      const data = { name, limit: lim, emoji: d.emoji || "🫙", color: d.color ?? 0 };
+      const id = sheet.id;
+      closeSheet();
+      if (id) await write(() => store.update("buckets", id, data), `Saved ${name}`);
+      else await write(() => store.add("buckets", { ...data, order: state.buckets.reduce((m, b) => Math.max(m, b.order ?? 0), 0) + 1, createdAt: Date.now() }), `Created ${name}`);
+    }
+  });
+
+  document.addEventListener("change", (e) => {
+    if (e.target.id !== "curSel") return;
+    setCurrencyCode(e.target.value);
+    try { localStorage.setItem("budget-jars-currency", currency.code); } catch {}
+    savePrefs();
+    render(); renderSheet();
+  });
+
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet) closeSheet(); });
+
+  function openAddSpend(bucketId) {
+    if (!state.buckets.length) return openBucket();
+    openSheet({ kind: "spend", bucketId: bucketId || (state.buckets.length === 1 ? state.buckets[0].id : ""), date: state.month === curMonth() ? todayStr() : `${state.month}-01` });
+  }
+  function openBucket(id) {
+    const b = id && state.buckets.find((x) => x.id === id);
+    const used = new Set(state.buckets.map((x) => x.color));
+    let free = 0; while (used.has(free) && free < COLORS - 1) free++;
+    openSheet({ kind: "bucket", id: id || null, draft: b ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0 } : { name: "", limit: "", emoji: "🛒", color: free } });
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const el = $("toast"); el.textContent = msg; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 2600);
+  }
+  function toastUndo(msg, onUndo) {
+    const el = $("toast"); el.innerHTML = `${esc(msg)} · <button class="link-btn" style="color:var(--bg);text-decoration:underline;padding:0" id="undoBtn">Undo</button>`; el.hidden = false;
+    $("undoBtn").onclick = () => { el.hidden = true; onUndo(); };
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 5000);
+  }
+
+  /* ---------- boot ---------- */
+  const savePrefs = () => {}; // Android keeps preferences on the device only.
+  const currentTheme = () => document.documentElement.dataset.theme || "auto";
+  function applyTheme(id) {
+    if (id === "auto") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = id;
+    try { localStorage.setItem("budget-jars-theme", id); } catch {}
+    syncThemeExtras();
+    savePrefs();
+  }
+  function syncThemeExtras() {
+    $("themeColor").setAttribute("content", getComputedStyle(document.body).backgroundColor);
+    const snow = $("snow"), on = currentTheme() === "holiday";
+    snow.hidden = !on;
+    if (on && !snow.childElementCount) {
+      snow.innerHTML = Array.from({ length: 36 }, () => {
+        const size = 3 + Math.random() * 5, dur = 9 + Math.random() * 10;
+        return `<i style="left:${(Math.random() * 100).toFixed(1)}%;width:${size.toFixed(1)}px;height:${size.toFixed(1)}px;--drift:${(Math.random() * 60 - 30).toFixed(0)}px;animation-duration:${dur.toFixed(1)}s;animation-delay:-${(Math.random() * dur).toFixed(1)}s"></i>`;
+      }).join("");
+    }
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", syncThemeExtras);
+
+  function boot() {
+    // On the web (iPhone home-screen app), cache the app so it opens offline. The Android app doesn't need this.
+    if ("serviceWorker" in navigator && location.protocol === "https:" && !window.Capacitor) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+    syncThemeExtras();
+    store = localStore();
+    render();
+    store.subscribe("buckets", (docs) => { state.buckets = docs; state.loaded.buckets = true; render(); });
+    store.subscribe("spends", (docs) => { state.spends = docs; state.loaded.spends = true; render(); });
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

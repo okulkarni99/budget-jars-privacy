@@ -1,5 +1,6 @@
-# Budget Jars privacy policy
+# Budget Jars (web + privacy policy)
 
-Published at https://okulkarni99.github.io/budget-jars-privacy/
+- Privacy policy: https://okulkarni99.github.io/budget-jars-privacy/
+- iPhone / web app: https://okulkarni99.github.io/budget-jars-privacy/app/ (open in Safari, Share, Add to Home Screen)
 
-Source of truth: `www/privacy.html` in the Budgeting-app- repo.
+`app/` is a copy of `www/` from the Budgeting-app- repo.
