@@ -1,6 +1,6 @@
 {
-  "name": "Budget Jars",
-  "short_name": "Budget Jars",
+  "name": "Little Jars",
+  "short_name": "Little Jars",
   "description": "Simple monthly budgeting with spending jars.",
   "start_url": "./",
   "scope": "./",

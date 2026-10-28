@@ -6,18 +6,19 @@
 <meta name="theme-color" id="themeColor" content="#EEF3F1">
 <script>
   // Apply the saved theme before first paint so the page never flashes the wrong colors.
-  try { var t = localStorage.getItem("budget-jars-theme"); if (t && t !== "auto") document.documentElement.dataset.theme = t; } catch (e) {}
+  try { var t = localStorage.getItem("budget-jars-theme"); if (t && t !== "auto") document.documentElement.dataset.skin = t; } catch (e) {}
 </script>
-<meta name="description" content="Simple monthly budgeting with spending jars.">
-<title>Budget Jars</title>
+<meta name="description" content="Little Jars: budgeting made simple, with spending jars.">
+<title>Little Jars</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Budget Jars">
+<meta name="apple-mobile-web-app-title" content="Little Jars">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
+/*FONTS-START*/
 @font-face { font-family: "Fredoka"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/fredoka-latin-500-normal.woff2") format("woff2"); }
 @font-face { font-family: "Fredoka"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/fredoka-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Fredoka"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/fredoka-latin-700-normal.woff2") format("woff2"); }
@@ -30,8 +31,9 @@ html { color-scheme: light; }
 body { margin: 0; }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
+/*FONTS-END*/
 
-/* Layout: one column — month summary on top, a grid of "jars" that drain as you spend, recent spends below; a floating Add button and bottom sheets for input. */
+/* Layout: a box of jars (the month's total) on top, free-standing jars below, expenses in a drawer behind a paper-clip tab, a floating Add button, and bottom sheets for input. */
 :root {
   --bg: #EEF3F1;
   --surface: #FFFFFF;
@@ -52,41 +54,43 @@ img { max-width: 100%; }
   --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r: 18px;
 }
+/* "Auto" theme: follow the system, or the claude.ai viewer's own light/dark switch. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
+  :root:not([data-skin]):not([data-theme="light"]) {
     --bg: #0E1412; --surface: #17201C; --ink: #E8F0EC; --muted: #93A49D; --line: #2A3631;
     --accent: #7F9BFF; --accent-ink: #0E1412; --danger: #FF6B70; --good: #4CC38A;
     --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
     color-scheme: dark;
   }
 }
-:root[data-theme="midnight"] {
+:root[data-theme="dark"]:not([data-skin]) {
+  --bg: #0E1412; --surface: #17201C; --ink: #E8F0EC; --muted: #93A49D; --line: #2A3631;
+  --accent: #7F9BFF; --accent-ink: #0E1412; --danger: #FF6B70; --good: #4CC38A;
+  --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+:root[data-skin="midnight"] {
   --bg: #000000; --surface: #121214; --ink: #F4F4F5; --muted: #9B9BA4; --line: #26262B;
   --accent: #A78BFA; --accent-ink: #0B0B0D; --danger: #FF6B70; --good: #4ADE80;
   --scrim: rgba(0, 0, 0, .72); --shadow: 0 0 0 1px #1E1E22;
   --j0: #34D399; --j1: #FB923C; --j2: #F472B6; --j3: #60A5FA;
   --j4: #A78BFA; --j5: #FACC15; --j6: #2DD4BF; --j7: #F87171;
-  --summary-bg: linear-gradient(160deg, #1A1A20, #0B0B0D);
   color-scheme: dark;
 }
-:root[data-theme="sunny"] {
+:root[data-skin="sunny"] {
   --bg: #FFFFFF; --surface: #FFFFFF; --ink: #1B1530; --muted: #6B6585; --line: #EEEAF6;
   --accent: #FF4F8B; --accent-ink: #FFFFFF; --danger: #E5383B; --good: #16A34A;
   --scrim: rgba(27, 21, 48, .35); --shadow: 0 2px 4px rgba(255, 79, 139, .06), 0 10px 28px rgba(80, 60, 160, .10);
   --j0: #22C55E; --j1: #FF8A00; --j2: #FF3D7F; --j3: #2D9CFF;
   --j4: #9B5CFF; --j5: #FFC400; --j6: #00C2B8; --j7: #FF4D4D;
-  --summary-bg: linear-gradient(135deg, #FFF3C4 0%, #FFD9E8 55%, #E3DBFF 100%);
-  --jar-border: #F1ECF8;
   color-scheme: light;
 }
-:root[data-theme="holiday"] {
+:root[data-skin="holiday"] {
   --bg: #0F2A1F; --surface: #163A2B; --ink: #FFF7E8; --muted: #BFD3C5; --line: #24513C;
   --accent: #E23B4E; --accent-ink: #FFFFFF; --danger: #FF7A85; --good: #7EE2A8;
   --scrim: rgba(5, 15, 10, .6); --shadow: 0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.25);
   --j0: #5FD39A; --j1: #F2C14E; --j2: #FF8FA3; --j3: #8FD3FF;
   --j4: #B48CFF; --j5: #E9E4D4; --j6: #FF9F6B; --j7: #E23B4E;
-  --summary-bg: linear-gradient(135deg, #9B1C2E, #5E1220);
-  --summary-muted: #F5C9CF;
   color-scheme: dark;
 }
 
@@ -97,6 +101,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .wrap {
+  position: relative; z-index: 1;
   max-width: 1040px; margin: 0 auto;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -104,7 +109,7 @@ body {
   display: flex; flex-direction: column; gap: 22px;
 }
 button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, input:focus-visible, .jar:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, .jar:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .num { font-variant-numeric: tabular-nums; }
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
 
@@ -112,41 +117,72 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .brand { font-size: 1.5rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
 .brand-mark { width: 32px; height: 32px; border-radius: 9px; display: block; }
+:root[data-skin="holiday"] .brand::after { content: "🎄"; font-size: 1.2rem; }
+.top-actions { display: flex; align-items: center; gap: 8px; }
 .month { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
 .month button { border: 0; background: transparent; width: 36px; height: 36px; border-radius: 999px; font-size: 1.1rem; }
 .month button:hover:not(:disabled) { background: var(--bg); }
 .month button:disabled { opacity: .3; cursor: default; }
 .month-label { min-width: 130px; text-align: center; font-weight: 600; }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); width: 46px; height: 46px; border-radius: 999px; font-size: 1.25rem; display: grid; place-items: center; }
 
-/* Summary */
-.summary { background: var(--summary-bg, var(--surface)); border-radius: var(--r); padding: 20px; box-shadow: var(--shadow); display: grid; gap: 14px; }
-.sum-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+/* Summary: a box of new mason jars seen from the top, one lid per jar, with a taped-on label. */
+.summary { display: grid; gap: 10px; }
 .eyebrow { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
 .big { font-family: var(--font-display); font-size: clamp(2.2rem, 7vw, 3.2rem); font-weight: 600; line-height: 1.05; }
-.big.over { color: var(--danger); }
-.sum-stats { display: flex; gap: 24px; flex-wrap: wrap; }
-.stat b { display: block; font-size: 1.15rem; }
-.stat span { color: var(--muted); font-size: .85rem; }
-.stack { height: 14px; border-radius: 999px; background: var(--bg); overflow: hidden; display: flex; }
+.jarbox {
+  --box: #C9965B; --box-wall: #B8864E; --box-flap: #D3A469; --box-inside: #5E3F22; --box-print: #8A5F33;
+  position: relative; width: 100%; max-width: 440px; margin: 0 auto;
+}
+:root[data-skin="holiday"] .jarbox { --box: #B3202F; --box-wall: #8E1B2A; --box-flap: #C42A3A; --box-inside: #4A0E18; --box-print: #F2C14E; }
+.jarbox svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 14px rgba(0,0,0,.16)); overflow: visible; }
+.jarbox .b-flap { fill: var(--box-flap); }
+.jarbox .b-crease { stroke: var(--box-wall); stroke-width: 1.5; }
+.jarbox .b-wall { fill: var(--box-wall); }
+.jarbox .b-inside { fill: var(--box-inside); }
+.jarbox .b-ribbon { fill: #F2C14E; display: none; }
+:root[data-skin="holiday"] .jarbox .b-ribbon { display: inline; }
+.jarbox .b-print { fill: var(--box-print); font-family: var(--font-display); font-weight: 700; }
+.lid-g { cursor: pointer; }
+.lid-g .l-glass { fill: rgba(255, 255, 255, .28); stroke: rgba(255, 255, 255, .5); stroke-width: 1; }
+.lid-g .l-rim { fill: color-mix(in srgb, var(--c) 62%, #000); }
+.lid-g .l-top { fill: var(--c); }
+.lid-g .l-ring { fill: none; stroke: rgba(255, 255, 255, .35); stroke-width: 1.2; }
+.lid-g .l-name { fill: #FFFFFF; font-family: var(--font-display); font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, .28); stroke-width: 2px; }
+.lid-g.over .l-rim { fill: var(--danger); }
+.box-sticker {
+  position: relative; margin: -34px auto 0; width: fit-content; min-width: 190px; max-width: 86%;
+  background: #FFF8EC; color: #2A1E12; border-radius: 10px; padding: 8px 18px 10px; text-align: center;
+  transform: rotate(-2deg); box-shadow: 0 6px 14px rgba(0,0,0,.18);
+}
+.box-sticker::before { content: ""; position: absolute; top: -9px; left: 50%; width: 64px; height: 18px; transform: translateX(-50%) rotate(3deg); background: rgba(255,255,255,.6); border: 1px solid rgba(0,0,0,.06); }
+.summary .box-sticker .eyebrow { color: #7A6650; font-size: .66rem; }
+.box-sticker .big { color: #2A1E12; font-size: clamp(1.5rem, 7vw, 2.2rem); }
+.box-sticker.over .big, .summary .box-sticker.over .eyebrow { color: #D33A41; }
+.sum-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; color: var(--muted); font-size: .92rem; }
+.sum-line b { color: var(--ink); }
+.stack { max-width: 440px; width: 100%; margin: 0 auto; height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; display: flex; }
 .stack i { display: block; height: 100%; }
-.pace { color: var(--muted); font-size: .9rem; }
+.pace { color: var(--muted); font-size: .9rem; text-align: center; }
 
 /* Jars */
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .section-head h2 { font-size: 1.25rem; }
+.hint { color: var(--muted); font-size: .8rem; font-weight: 500; }
 .link-btn { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 6px 2px; }
 .jars { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 14px; }
 .jar {
   --c: var(--j0);
   position: relative; border: 0; background: none; padding: 0;
   display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
-  transition: transform .15s ease;
+  transition: transform .15s ease, opacity .15s ease;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .jar:hover { transform: translateY(-3px); }
 .jar:active { transform: scale(.97); }
 .jar:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 18px; }
-
-/* The jar drawing: glass body, lid, and a two-layer liquid that sloshes and pours to its level. */
+.jar.drag-src { opacity: .25; }
+.drag-ghost { position: fixed; z-index: 90; pointer-events: none; transform: translate(-50%, -55%) scale(1.06) rotate(-3deg); filter: drop-shadow(0 16px 20px rgba(0,0,0,.28)); }
 .jar-art { position: relative; width: 100%; max-width: 168px; }
 .jar-art svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 10px rgba(0,0,0,.10)); }
 .jar-art .glass { fill: color-mix(in srgb, var(--c) 8%, var(--surface)); }
@@ -178,39 +214,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .jar.add { justify-content: center; color: var(--muted); font-weight: 600; border: 2px dashed var(--line); border-radius: 22px; min-height: 200px; }
 .jar.add span:first-child { font-size: 2rem; line-height: 1; }
 
-/* The total: an open cardboard box of new mason jars, one per budget jar, with a shipping label. */
-.summary { background: none; box-shadow: none; padding: 0; gap: 10px; }
-.jarbox {
-  --box: #C9965B; --box-dark: #A87A45; --box-flap: #B8864E; --box-inside: #6E4B2A; --box-print: #8A5F33;
-  position: relative; width: 100%; max-width: 440px; margin: 0 auto;
-}
-:root[data-theme="holiday"] .jarbox { --box: #B3202F; --box-dark: #8E1B2A; --box-flap: #9B1C2E; --box-inside: #4A0E18; --box-print: #F2C14E; }
-.jarbox svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 14px rgba(0,0,0,.16)); }
-.jarbox .b-front { fill: var(--box); }
-.jarbox .b-rim { fill: var(--box-dark); }
-.jarbox .b-flap { fill: var(--box-flap); }
-.jarbox .b-inside { fill: var(--box-inside); }
-.jarbox .b-label { fill: #FFF8EC; }
-.jarbox .b-print { fill: var(--box-print); font: 700 15px var(--font-display); letter-spacing: 1px; }
-.jarbox .b-ribbon { fill: #F2C14E; display: none; }
-:root[data-theme="holiday"] .jarbox .b-ribbon { display: inline; }
-.jarbox .m-glass { fill: rgba(255, 255, 255, .62); stroke: rgba(90, 120, 140, .55); stroke-width: 1.5; }
-.jarbox .m-shine { fill: #FFFFFF; opacity: .8; }
-.jarbox .m-ridge { stroke: rgba(0, 0, 0, .28); stroke-width: 1.2; }
-.box-label {
-  position: absolute; left: 26.25%; width: 47.5%; top: 55.8%; height: 34.2%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #2A1E12;
-}
-.summary .box-label .eyebrow { color: #7A6650; font-size: .66rem; }
-.box-label .big { color: #2A1E12; font-size: clamp(1.35rem, 6.4vw, 2.1rem); }
-.summary .box-label.over .big, .summary .box-label.over .eyebrow { color: var(--danger); }
-.sum-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; color: var(--muted); font-size: .92rem; }
-.sum-line b { color: var(--ink); }
-.summary .stack { max-width: 440px; width: 100%; margin: 0 auto; height: 10px; background: var(--line); }
-.summary .pace { text-align: center; }
-
-/* Activity */
-.list { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+/* Rows (expenses) */
 .row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--line); }
 .row:first-child { border-top: 0; }
 .row-emoji { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; font-size: 1.25rem; background: color-mix(in srgb, var(--c, var(--j0)) 20%, transparent); }
@@ -221,8 +225,9 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .row-del { border: 0; background: none; color: var(--muted); width: 34px; height: 34px; border-radius: 10px; font-size: 1.1rem; flex: none; }
 .row-del:hover { background: var(--bg); color: var(--danger); }
 .empty { padding: 28px 16px; text-align: center; color: var(--muted); }
-
 .notice { font-size: .85rem; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 10px 14px; }
+.foot { text-align: center; color: var(--muted); font-size: .82rem; margin: 0; }
+.foot a { color: inherit; }
 
 /* FAB */
 .fab {
@@ -236,6 +241,35 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
   display: flex; align-items: center; gap: 8px;
 }
 .fab b { font-size: 1.5rem; line-height: 1; font-weight: 500; }
+/* Leave room on narrow screens for the paper-clip tab on the right edge. */
+@media (max-width: 640px) { .wrap { padding-right: max(44px, env(safe-area-inset-right, 0px)); } }
+
+/* Expenses drawer, opened by a paper-clipped tab on the right edge. */
+.clip-tab {
+  position: fixed; z-index: 25; right: 0; top: 46%;
+  border: 1px solid var(--line); border-right: 0; background: var(--surface); color: var(--ink);
+  border-radius: 14px 0 0 14px; padding: 18px 8px 12px 9px;
+  padding-right: max(8px, env(safe-area-inset-right, 0px));
+  box-shadow: -4px 4px 14px rgba(0,0,0,.14);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.clip-tab svg { position: absolute; top: -18px; left: 50%; width: 18px; height: 40px; transform: translateX(-50%) rotate(8deg); }
+.clip-tab span { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--font-display); font-weight: 600; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+.clip-tab b { font-size: .7rem; min-width: 20px; padding: 1px 5px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); }
+.drawer-scrim { position: fixed; inset: 0; z-index: 44; background: var(--scrim); }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: min(420px, 92vw);
+  background: var(--surface); color: var(--ink); box-shadow: -20px 0 50px rgba(0,0,0,.25);
+  transform: translateX(105%); transition: transform .28s cubic-bezier(.3,.8,.3,1), visibility 0s .28s;
+  display: flex; flex-direction: column; visibility: hidden;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px);
+}
+.drawer.open { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.3,.8,.3,1), visibility 0s; }
+.drawer-head { padding: 18px 18px 12px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
+.drawer-head .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.drawer-head .chip { flex: none; padding: 6px 12px; font-size: .88rem; }
+.drawer-list { overflow: auto; flex: 1; }
+.day-head { position: sticky; top: 0; background: var(--surface); padding: 10px 16px 4px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
 
 /* Sheets */
 .scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -243,8 +277,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
   background: var(--surface); color: var(--ink); width: 100%; max-width: 480px; max-height: 88vh; overflow: auto;
   border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 16px;
   box-shadow: 0 20px 60px rgba(0,0,0,.25);
-  animation: rise .22s ease-out;
 }
+.sheet.anim { animation: rise .22s ease-out; }
 @keyframes rise { from { transform: translateY(16px); opacity: .6; } }
 @media (max-width: 560px) {
   .scrim { align-items: flex-end; padding: 0; }
@@ -254,15 +288,20 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sheet-head h3 { font-size: 1.35rem; }
 .x { border: 0; background: var(--bg); width: 36px; height: 36px; border-radius: 999px; font-size: 1.1rem; flex: none; }
-label.f { display: grid; gap: 6px; font-weight: 600; font-size: .9rem; }
-input.t, select.t {
+label.f, .f { display: grid; gap: 6px; font-weight: 600; font-size: .9rem; }
+input.t, select.t, textarea.t {
   font: inherit; color: var(--ink); background: var(--bg); border: 2px solid transparent; border-radius: 14px;
   padding: 12px 14px; width: 100%; font-weight: 500;
 }
-input.t:focus, select.t:focus { border-color: var(--accent); outline: none; }
+textarea.t { min-height: 120px; resize: vertical; }
+input.t:focus, select.t:focus, textarea.t:focus { border-color: var(--accent); outline: none; }
+select.t { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 40px; }
 .amount-wrap { position: relative; }
-.amount-wrap span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-size: 2rem; color: var(--muted); }
-input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight: 600; padding-left: 42px; }
+.amount-wrap > span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-size: 2rem; color: var(--muted); pointer-events: none; }
+input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight: 600; }
+.ops { display: flex; gap: 8px; align-items: center; }
+.ops button { border: 0; background: var(--bg); border-radius: 12px; min-width: 52px; padding: 8px 14px; font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; }
+.calc { color: var(--muted); font-weight: 600; font-size: .95rem; margin-left: auto; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   border: 2px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px;
@@ -289,24 +328,6 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 .detail-list { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .detail-list .row { padding: 10px 12px; }
 .confirm { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; }
-
-.toast {
-  position: fixed; z-index: 60; left: 50%; transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
-  background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600;
-  box-shadow: var(--shadow); max-width: calc(100% - 32px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .jar-art .wave { animation: none !important; }
-  .jar-art .liquid { transition: none; }
-  .sheet { animation: none; }
-  .jar { transition: none; }
-}
-
-.summary .eyebrow, .summary .stat span, .summary .pace { color: var(--summary-muted, var(--muted)); }
-.top-actions { display: flex; align-items: center; gap: 8px; }
-.icon-btn { border: 1px solid var(--line); background: var(--surface); width: 46px; height: 46px; border-radius: 999px; font-size: 1.25rem; display: grid; place-items: center; }
 .themes { display: grid; gap: 10px; }
 .theme-opt {
   display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
@@ -318,60 +339,155 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 .swatch { display: flex; flex: none; }
 .swatch i { width: 26px; height: 26px; border-radius: 999px; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
 .swatch i + i { margin-left: -8px; }
-:root[data-theme="holiday"] .brand::after { content: "🎄"; font-size: 1.2rem; }
-.wrap { position: relative; z-index: 1; }
-#snow { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-#snow i {
-  position: absolute; top: -12px; border-radius: 50%; background: #FFFFFF; opacity: .55;
-  animation: snow linear infinite;
-}
-@keyframes snow { to { transform: translate3d(var(--drift, 20px), 105vh, 0); } }
-@media (prefers-reduced-motion: reduce) { #snow { display: none; } }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--bg); border-radius: 14px; font-weight: 600; }
+.set-row small { display: block; color: var(--muted); font-weight: 500; font-size: .82rem; }
+.set-row input[type="time"] { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
+.switch { position: relative; width: 50px; height: 30px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch i { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background .2s; }
+.switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.switch input:checked + i { background: var(--accent); }
+.switch input:checked + i::after { transform: translateX(20px); }
+.switch input:focus-visible + i { outline: 3px solid var(--accent); outline-offset: 2px; }
+.links { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.version { color: var(--muted); font-size: .8rem; text-align: center; }
+.news { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.news li { display: flex; gap: 12px; align-items: flex-start; background: var(--bg); border-radius: 14px; padding: 10px 12px; }
+.news li span { font-size: 1.4rem; line-height: 1.2; }
+.copy-box { display: flex; gap: 8px; align-items: center; background: var(--bg); border-radius: 12px; padding: 8px 8px 8px 12px; font-weight: 600; }
+.copy-box code { flex: 1; font: inherit; user-select: all; overflow-wrap: anywhere; }
 
-select.t { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 40px; }
-.foot { text-align: center; color: var(--muted); font-size: .82rem; margin: 0; }
-.foot a { color: inherit; }
+/* Confirm dialog */
+.confirm-scrim { z-index: 70; align-items: center !important; padding: 16px !important; }
+.dialog { background: var(--surface); color: var(--ink); border-radius: 22px; padding: 22px; width: min(380px, calc(100vw - 32px)); display: grid; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.3); animation: pop .18s ease-out; }
+.dialog h3 { font-size: 1.25rem; }
+.dialog p { margin: 0; color: var(--muted); }
+.dialog .actions .btn { flex: 1; }
+@keyframes pop { from { transform: scale(.94); opacity: .5; } }
+
+.toast {
+  position: fixed; z-index: 75; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+  background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600;
+  box-shadow: var(--shadow); max-width: calc(100% - 32px);
+}
+
+/* First-run tour: spotlight, bouncing arrow, and a label bubble. */
+.tour { position: fixed; inset: 0; z-index: 80; }
+.tour-spot { position: fixed; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(8, 12, 22, .66); transition: all .3s ease; pointer-events: none; }
+.tour-bubble { position: fixed; width: min(320px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); border-radius: 18px; padding: 16px 16px 14px; box-shadow: 0 14px 40px rgba(0,0,0,.35); display: grid; gap: 8px; }
+.tour-bubble b { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+.tour-bubble p { margin: 0; color: var(--muted); }
+.tour-bubble .actions { align-items: center; }
+.tour-step { color: var(--muted); font-size: .8rem; font-weight: 600; margin-right: auto; }
+.tour-arrow { position: fixed; width: 44px; height: 44px; margin-left: -22px; color: #FFD34D; filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); }
+.tour-arrow.down { animation: bobDown .6s ease-in-out infinite alternate; }
+.tour-arrow.up { animation: bobUp .6s ease-in-out infinite alternate; }
+.tour-arrow.up svg { transform: rotate(180deg); }
+@keyframes bobDown { to { transform: translateY(10px); } }
+@keyframes bobUp { to { transform: translateY(-10px); } }
+
+/* Startup animation: two coins drop into the jar, it fills, and the name appears. */
+#intro { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, #4C74FF, #2F5BEA 55%, #2448C4); transition: opacity .35s ease; cursor: pointer; }
+#intro.out { opacity: 0; }
+.intro-stage { display: grid; justify-items: center; gap: 6px; }
+.intro-jar { width: 150px; height: auto; overflow: visible; }
+.intro-coin { animation: coinDrop .6s cubic-bezier(.55, 0, .8, .2) both; }
+.intro-coin.c2 { animation-delay: .32s; }
+@keyframes coinDrop { 0% { transform: translateY(-260px) rotate(-40deg); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(0) rotate(0); opacity: 0; } }
+.intro-liquid { animation: fillUp .75s .6s cubic-bezier(.3, .8, .3, 1.1) both; }
+@keyframes fillUp { from { transform: translateY(96px); } }
+.intro-lid { animation: lidOn .35s 1.15s cubic-bezier(.3, .8, .3, 1.2) both; }
+@keyframes lidOn { from { transform: translate(-46px, -26px) rotate(-28deg); } }
+.intro-word { font-family: var(--font-display); font-weight: 700; font-size: 2.6rem; color: #FFFFFF; animation: wordIn .45s 1.05s both; }
+.intro-tag { font-weight: 500; color: rgba(255, 255, 255, .88); animation: wordIn .45s 1.2s both; }
+@keyframes wordIn { from { opacity: 0; transform: translateY(10px); } }
+
+/* Holiday snow */
+#snow { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+#snow i { position: absolute; top: -12px; border-radius: 50%; background: #FFFFFF; opacity: .55; animation: snow linear infinite; }
+@keyframes snow { to { transform: translate3d(var(--drift, 20px), 105vh, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .jar-art .wave, #snow, .tour-arrow { animation: none !important; }
+  .jar-art .liquid, .drawer, .jar { transition: none; }
+  .sheet.anim, .dialog { animation: none; }
+  #snow { display: none; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <h1 class="brand"><img class="brand-mark" src="icons/icon-192.png" alt="" width="32" height="32">Budget Jars</h1>
+    <h1 class="brand"><img class="brand-mark" src="icons/icon-192.png" alt="" width="32" height="32">Little Jars</h1>
     <div class="top-actions">
       <div class="month" role="group" aria-label="Month">
         <button id="prevMonth" aria-label="Previous month">‹</button>
         <div class="month-label" id="monthLabel"></div>
         <button id="nextMonth" aria-label="Next month">›</button>
       </div>
-      <button class="icon-btn" id="settingsBtn" aria-label="Theme and currency">⚙️</button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
     </div>
   </header>
 
   <section class="summary" id="summary" aria-live="polite"></section>
 
   <section style="display:grid;gap:12px">
-    <div class="section-head"><h2>Your jars</h2><button class="link-btn" id="newBucketTop">+ New jar</button></div>
+    <div class="section-head"><h2>Your jars <span class="hint" id="dragHint"></span></h2><button class="link-btn" id="newBucketTop">+ New jar</button></div>
     <div class="jars" id="jars"></div>
   </section>
 
-  <section style="display:grid;gap:12px">
-    <div class="section-head"><h2>Spending this month</h2></div>
-    <div class="list" id="activity"></div>
-  </section>
-
-  <p class="foot"><a href="privacy.html">Privacy</a> · Your budget is stored only on this device.</p>
+  <div class="notice" id="notice" hidden></div>
+  <p class="foot" id="foot"><a href="privacy.html">Privacy</a> · Your budget is stored only on this device.</p>
 </div>
 
 <button class="fab" id="fab"><b>+</b> Add spend</button>
+<button class="clip-tab" id="clipTab" aria-label="Open expenses">
+  <svg viewBox="0 0 18 40" aria-hidden="true"><path d="M5 30 V9 a4 4 0 0 1 8 0 V31 a6 6 0 0 1 -12 0 V12" fill="none" stroke="#8C96A3" stroke-width="2.4" stroke-linecap="round"/></svg>
+  <span>Expenses</span><b id="clipCount" hidden></b>
+</button>
+<div class="drawer-scrim" id="drawerScrim" hidden></div>
+<aside class="drawer" id="drawer" aria-label="Expenses" aria-hidden="true"><div id="drawerBody" style="display:contents"></div></aside>
 <div id="snow" aria-hidden="true" hidden></div>
 <div id="sheetRoot"></div>
-<div class="toast" id="toast" hidden></div>
+<div id="confirmRoot"></div>
+<div id="tourRoot"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<div id="intro" aria-hidden="true">
+  <div class="intro-stage">
+    <svg class="intro-jar" viewBox="0 0 200 220">
+      <defs><clipPath id="introClip"><path d="M44 72 Q44 56 60 56 H140 Q156 56 156 72 V188 Q156 208 136 208 H64 Q44 208 44 188 Z"/></clipPath></defs>
+      <path d="M44 72 Q44 56 60 56 H140 Q156 56 156 72 V188 Q156 208 136 208 H64 Q44 208 44 188 Z" fill="#FFFFFF"/>
+      <g clip-path="url(#introClip)"><g class="intro-liquid">
+        <path d="M20 128 Q45 116 70 128 T120 128 T170 128 T220 128 V230 H20 Z" fill="#F5B82E"/>
+        <path d="M20 150 Q45 140 70 150 T120 150 T170 150 T220 150 V230 H20 Z" fill="#2FA36B"/>
+      </g></g>
+      <rect x="54" y="78" width="8" height="40" rx="4" fill="#2F5BEA" opacity=".18"/>
+      <g class="intro-coin c1"><circle cx="84" cy="104" r="16" fill="#F7C548" stroke="#E0A526" stroke-width="3"/><text x="84" y="110" text-anchor="middle" font-size="17" font-weight="700" fill="#8A5300" font-family="system-ui, sans-serif">$</text></g>
+      <g class="intro-coin c2"><circle cx="118" cy="114" r="16" fill="#F7C548" stroke="#E0A526" stroke-width="3"/><text x="118" y="120" text-anchor="middle" font-size="16" font-weight="700" fill="#8A5300" font-family="system-ui, sans-serif">₹</text></g>
+      <rect class="intro-lid" x="58" y="32" width="84" height="24" rx="8" fill="#14221D"/>
+    </svg>
+    <div class="intro-word">Little Jars</div>
+    <div class="intro-tag">Budgeting made simple</div>
+  </div>
+</div>
 
 <script>
 (() => {
-  const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱"];
-  const PRESETS = [["Groceries","🛒"],["Eating out","🍜"],["Coffee","☕"],["Gas","⛽"],["Shopping","🛍️"],["Fun","🎉"],["Home","🏠"],["Pets","🐾"]];
+  const APP_VERSION = "1.1.0";
+  const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
+  const MAX_AMOUNT = 9999999.99;
+  const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
+                  "📈","💹","🏦","💰","🪙","💵","🐷","💳","🎓","🧾","🏖️","❤️"];
+  const PRESETS = [["Groceries","🛒"],["Eating out","🍜"],["Coffee","☕"],["Gas","⛽"],["Shopping","🛍️"],["Fun","🎉"],["Home","🏠"],["Pets","🐾"],["Investing","📈"],["Savings","🐷"]];
+  const FILLS = [["liquid","Liquid","💧"],["candy","Candy","🍬"],["kisses","Chocolate kisses","🍫"],["cash","Cash","💵"],["coins","Coins","🪙"]];
   const COLORS = 8;
+  const THEMES = [
+    { id: "auto", name: "Auto", desc: "Follows your phone's light or dark mode", sw: ["#EEF3F1", "#2F5BEA", "#0E1412"] },
+    { id: "sunny", name: "Sunny", desc: "Bright white with candy colors", sw: ["#FFFFFF", "#FF4F8B", "#FFC400"] },
+    { id: "midnight", name: "Midnight", desc: "True black, easy on the eyes at night", sw: ["#000000", "#A78BFA", "#34D399"] },
+    { id: "holiday", name: "Holiday", desc: "Evergreen, cranberry and gold, with snow", sw: ["#0F2A1F", "#E23B4E", "#F2C14E"] },
+  ];
   const CURRENCIES = [
     ["USD", "US dollar", "en-US"], ["EUR", "Euro", "en-IE"], ["GBP", "British pound", "en-GB"],
     ["INR", "Indian rupee", "en-IN"], ["CAD", "Canadian dollar", "en-CA"], ["AUD", "Australian dollar", "en-AU"],
@@ -384,29 +500,62 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
     ["THB", "Thai baht", "th-TH"], ["IDR", "Indonesian rupiah", "id-ID"], ["NGN", "Nigerian naira", "en-NG"],
     ["PKR", "Pakistani rupee", "en-PK"], ["BDT", "Bangladeshi taka", "en-BD"], ["LKR", "Sri Lankan rupee", "en-LK"],
   ];
+  const REMINDERS = [
+    "Your jars miss you! Got any spends to tuck in today? 🫙",
+    "Psst… did your wallet do anything fun today? Tell your jars 💸",
+    "Quick 10-second check-in: log today's spends and rest easy 🌙",
+    "Your jars are getting sleepy. One last spend update before bed? 😴",
+    "Coffee? Snacks? A tiny treat? Your jars want the gossip ☕",
+    "A gentle nudge from your jars: today's spends, please 🥺",
+    "You + 10 seconds = a happy budget. Log today's spends ✨",
+    "Before dreamland, feed your jars today's spends 🍬",
+    "Your future self says thanks for logging today 💛",
+    "Jar check! Anything new to add from today? 🫙",
+    "Tiny habit, big wins. Log today's spends 🌱",
+    "The jars are listening… what did today cost? 👂",
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+  const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const IN_CLAUDE = !!(window.claude && window.claude.use);
+  const LN = () => (IS_NATIVE && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) || null;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- currency + amounts ---------- */
   let currency = { code: "USD", locale: "en-US", digits: 2, symbol: "$" };
   function setCurrencyCode(code) {
     const c = CURRENCIES.find((x) => x[0] === code) || CURRENCIES[0];
     const f = new Intl.NumberFormat(c[2], { style: "currency", currency: c[0] });
-    currency = {
-      code: c[0], locale: c[2],
-      digits: f.resolvedOptions().maximumFractionDigits,
-      symbol: (f.formatToParts(0).find((p) => p.type === "currency") || {}).value || c[0],
-    };
+    currency = { code: c[0], locale: c[2], digits: f.resolvedOptions().maximumFractionDigits, symbol: (f.formatToParts(0).find((p) => p.type === "currency") || {}).value || c[0] };
   }
-  try { const saved = localStorage.getItem("budget-jars-currency"); if (saved) setCurrencyCode(saved); } catch {}
-  const THEMES = [
-    { id: "auto", name: "Auto", desc: "Follows your phone's light or dark mode", sw: ["#EEF3F1", "#2F5BEA", "#0E1412"] },
-    { id: "sunny", name: "Sunny", desc: "Bright white with candy colors", sw: ["#FFFFFF", "#FF4F8B", "#FFC400"] },
-    { id: "midnight", name: "Midnight", desc: "True black, easy on the eyes at night", sw: ["#000000", "#A78BFA", "#34D399"] },
-    { id: "holiday", name: "Holiday", desc: "Evergreen, cranberry and gold, with snow", sw: ["#0F2A1F", "#E23B4E", "#F2C14E"] },
-  ];
-  const $ = (id) => document.getElementById(id);
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
   const money = (n) => {
     const p = 10 ** currency.digits, v = Math.round(n * p) / p;
     return v.toLocaleString(currency.locale, { style: "currency", currency: currency.code, minimumFractionDigits: v % 1 ? currency.digits : 0, maximumFractionDigits: currency.digits });
   };
+  // Amount fields accept simple sums like "12+10-3". Each number: up to 7 digits before the decimal and 2 after.
+  function cleanAmount(raw) {
+    let s = String(raw).replace(/[−–—]/g, "-").replace(/[^0-9.+\-]/g, "");
+    s = s.replace(/^[+-]+/, "").replace(/[+-]{2,}/g, (m) => m.slice(-1));
+    return s.split(/([+-])/).map((tok) => {
+      if (tok === "+" || tok === "-") return tok;
+      const [i, ...f] = tok.split(".");
+      return f.length ? i.slice(0, 7) + "." + f.join("").slice(0, 2) : i.slice(0, 7);
+    }).join("");
+  }
+  function evalAmount(raw) {
+    let s = cleanAmount(raw).replace(/[+-]$/, "");
+    if (!s || !/\d/.test(s)) return NaN;
+    const parts = s.match(/[+-]?[^+-]+/g) || [];
+    let t = 0;
+    for (const p of parts) { const v = parseFloat(p); if (!isFinite(v)) return NaN; t += v; }
+    return Math.round(t * 100) / 100;
+  }
+  const hasOps = (s) => /\d[+-]\d?/.test(cleanAmount(s));
+
+  /* ---------- dates ---------- */
   const pad = (n) => String(n).padStart(2, "0");
   const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const curMonth = () => todayStr().slice(0, 7);
@@ -414,19 +563,61 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
   const shiftMonth = (ym, d) => { const [y, m] = ym.split("-").map(Number); const t = new Date(y, m - 1 + d, 1); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; };
   const daysIn = (ym) => { const [y, m] = ym.split("-").map(Number); return new Date(y, m, 0).getDate(); };
   const shortDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
-  const parseAmt = (s) => { const n = parseFloat(String(s).replace(/[^0-9.]/g, "")); return isFinite(n) ? Math.round(n * 100) / 100 : NaN; };
+  const dayLabel = (s) => { if (s === todayStr()) return "Today"; const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }); };
 
+  /* ---------- state ---------- */
   const state = { buckets: [], spends: [], loaded: { buckets: false, spends: false }, month: curMonth(), readOnly: false };
+  const prefs = { theme: "auto", currency: "USD", sound: true, reminder: { on: false, time: "21:00" } };
   let store = null;
-  let sheet = null; // { kind, ...props }
+  let sheet = null;
+  let drawer = { open: false, filter: "all" };
+  let dataReadyResolve; const dataReady = new Promise((r) => (dataReadyResolve = r));
+
+  /* ---------- layers (sheet, drawer, dialog) and Android's back button ---------- */
+  const layers = [];
+  let skipPop = 0;
+  function pushLayer(name) { layers.push(name); if (IS_NATIVE) history.pushState({ layer: name }, ""); }
+  function popLayer(name) {
+    const i = layers.lastIndexOf(name); if (i < 0) return;
+    layers.splice(i, 1);
+    if (IS_NATIVE) { skipPop++; history.back(); }
+  }
+  window.addEventListener("popstate", () => {
+    if (skipPop) { skipPop--; return; }
+    const top = layers.pop();
+    if (top === "confirm") answerConfirm(false, true);
+    else if (top === "drawer") closeDrawer(true);
+    else if (top === "sheet") closeSheet(true);
+  });
+  function closeTop() {
+    const top = layers[layers.length - 1];
+    if (top === "confirm") answerConfirm(false);
+    else if (top === "sheet") closeSheet();
+    else if (top === "drawer") closeDrawer();
+  }
 
   /* ---------- storage ---------- */
+  function dbStore(db) {
+    return {
+      subscribe(col, cb) {
+        db.collection(col).onSnapshot(
+          (s) => cb(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
+          (e) => toast(e && e.code === "revoked" ? "This budget is no longer available here." : "Lost connection to your saved budget. Reload to reconnect.")
+        );
+      },
+      add: (col, data) => db.collection(col).add(data),
+      update: (col, id, data) => db.doc(`${col}/${id}`).update(data),
+      remove: (col, id) => db.doc(`${col}/${id}`).delete(),
+      watchPrefs: (cb) => db.doc("settings/main").onSnapshot((s) => { if (s.exists) cb(s.data()); }, () => {}),
+      savePrefs: (d) => db.doc("settings/main").set(d),
+    };
+  }
   function localStore() {
     const KEY = "budget-jars-v1";
     let data = { buckets: {}, spends: {} };
     try { const raw = localStorage.getItem(KEY); if (raw) data = JSON.parse(raw); } catch {}
     const subs = { buckets: [], spends: [] };
-    const emit = (col) => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} subs[col].forEach((cb) => cb(Object.entries(data[col]).map(([id, v]) => ({ id, ...v })))); };
+    const emit = (col) => { lsSet(KEY, JSON.stringify(data)); subs[col].forEach((cb) => cb(Object.entries(data[col]).map(([id, v]) => ({ id, ...v })))); };
     const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     return {
       subscribe(col, cb) { subs[col].push(cb); setTimeout(() => emit(col)); },
@@ -445,34 +636,155 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
     }
   }
 
+  /* ---------- preferences ---------- */
+  function loadLocalPrefs() {
+    prefs.theme = lsGet("budget-jars-theme") || "auto";
+    prefs.currency = lsGet("budget-jars-currency") || "USD";
+    prefs.sound = lsGet("lj-sound") !== "off";
+    try { const r = JSON.parse(lsGet("lj-reminder") || "null"); if (r && typeof r.on === "boolean") prefs.reminder = { on: r.on, time: r.time || "21:00" }; } catch {}
+    setCurrencyCode(prefs.currency);
+  }
+  function savePrefs() {
+    lsSet("budget-jars-theme", prefs.theme);
+    lsSet("budget-jars-currency", prefs.currency);
+    lsSet("lj-sound", prefs.sound ? "on" : "off");
+    lsSet("lj-reminder", JSON.stringify(prefs.reminder));
+    if (store && store.savePrefs && !state.readOnly) write(() => store.savePrefs({ theme: prefs.theme, currency: prefs.currency, sound: prefs.sound }));
+  }
+  const currentTheme = () => document.documentElement.dataset.skin || "auto";
+  function setTheme(id) {
+    prefs.theme = id;
+    if (id === "auto") delete document.documentElement.dataset.skin;
+    else document.documentElement.dataset.skin = id;
+    syncThemeExtras();
+  }
+  function syncThemeExtras() {
+    const tc = $("themeColor"); if (tc) tc.setAttribute("content", getComputedStyle(document.body).backgroundColor);
+    const snow = $("snow"), on = currentTheme() === "holiday";
+    snow.hidden = !on;
+    if (on && !snow.childElementCount) {
+      snow.innerHTML = Array.from({ length: 36 }, () => {
+        const size = 3 + Math.random() * 5, dur = 9 + Math.random() * 10;
+        return `<i style="left:${(Math.random() * 100).toFixed(1)}%;width:${size.toFixed(1)}px;height:${size.toFixed(1)}px;--drift:${(Math.random() * 60 - 30).toFixed(0)}px;animation-duration:${dur.toFixed(1)}s;animation-delay:-${(Math.random() * dur).toFixed(1)}s"></i>`;
+      }).join("");
+    }
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", syncThemeExtras);
+
+  /* ---------- sound: a coin "cha-ching", synthesized so there is no audio file ---------- */
+  let audio;
+  function chaChing() {
+    if (!prefs.sound) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
+      const t0 = audio.currentTime;
+      // "cha": a short bright noise burst, like a register drawer
+      const len = Math.floor(audio.sampleRate * 0.07), buf = audio.createBuffer(1, len, audio.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const noise = audio.createBufferSource(); noise.buffer = buf;
+      const hp = audio.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 3000;
+      const ng = audio.createGain(); ng.gain.value = 0.25;
+      noise.connect(hp).connect(ng).connect(audio.destination); noise.start(t0);
+      // "ching": two quick bell tones with a ringing tail
+      [[0.08, [2093, 3136, 4186]], [0.2, [2637, 3951, 5274]]].forEach(([dt, freqs]) => {
+        freqs.forEach((f, k) => {
+          const o = audio.createOscillator(), g = audio.createGain();
+          o.type = "sine"; o.frequency.value = f;
+          const start = t0 + dt, peak = 0.16 / (k + 1);
+          g.gain.setValueAtTime(0.0001, start);
+          g.gain.exponentialRampToValueAtTime(peak, start + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, start + 0.7);
+          o.connect(g).connect(audio.destination); o.start(start); o.stop(start + 0.75);
+        });
+      });
+    } catch {}
+  }
+
+  /* ---------- reminders (Android app only) ---------- */
+  const hasSpendToday = () => state.spends.some((s) => s.date === todayStr());
+  async function scheduleReminders(askPermission) {
+    const ln = LN(); if (!ln) return;
+    try {
+      const pending = await ln.getPending();
+      if (pending.notifications.length) await ln.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) });
+      if (!prefs.reminder.on) return;
+      let perm = await ln.checkPermissions();
+      if (perm.display !== "granted" && askPermission) perm = await ln.requestPermissions();
+      if (perm.display !== "granted") {
+        if (askPermission) { prefs.reminder.on = false; savePrefs(); toast("Notifications are off for Little Jars. Turn them on in your phone's settings."); if (sheet && sheet.kind === "settings") renderSheet(); }
+        return;
+      }
+      const [h, m] = prefs.reminder.time.split(":").map(Number);
+      const now = new Date(), list = [];
+      const offset = Math.floor(Math.random() * REMINDERS.length);
+      for (let i = 0; i < 14; i++) {
+        const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, h, m, 0);
+        if (at <= now) continue;
+        if (i === 0 && hasSpendToday()) continue; // already logged today: no nudge
+        list.push({ id: 1000 + i, title: "Little Jars 🫙", body: REMINDERS[(offset + i) % REMINDERS.length], schedule: { at, allowWhileIdle: true }, isExactNotification: false, smallIcon: "ic_stat_jar", iconColor: "#2F5BEA" });
+      }
+      if (list.length) await ln.schedule({ notifications: list });
+    } catch { /* reminders are best-effort */ }
+  }
+
   /* ---------- derived ---------- */
   const bucketColor = (b) => `var(--j${(b?.color ?? 0) % COLORS})`;
   const monthSpends = () => state.spends.filter((s) => (s.date || "").slice(0, 7) === state.month);
   function totals() {
-    const ms = monthSpends();
-    const by = {};
+    const ms = monthSpends(), by = {};
     ms.forEach((s) => { by[s.bucketId] = (by[s.bucketId] || 0) + (Number(s.amount) || 0); });
     return { ms, by };
   }
   const sortedBuckets = () => [...state.buckets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(b.name));
+  const hash = (s) => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
+  const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const fillOf = (b) => { const f = b.fill || "surprise"; return f === "surprise" ? FILLS[hash(b.id) % FILLS.length][0] : f; };
 
-  // Glass jar drawing. The liquid group starts at the jar's last level and pours to the new one.
+  /* ---------- jar drawing ---------- */
   const JAR_BODY = "M16 36 Q16 28 26 28 H74 Q84 28 84 36 V114 Q84 128 70 128 H30 Q16 128 16 114 Z";
   const WAVE = "M-100 0 Q-87.5 -5 -75 0 T-50 0 T-25 0 T0 0 T25 0 T50 0 T75 0 T100 0 T125 0 T150 0 T175 0 T200 0 V140 H-100 Z";
   const lastLevel = {};
   const levelY = (f) => (f <= 0 ? 136 : 126 - 94 * Math.min(1, f)).toFixed(1);
-  function jarArt(key, frac, emoji) {
+  // Contents are drawn with their surface at y=0, filling downward; the group is shifted to the jar's level.
+  function contents(type, key) {
+    if (type === "liquid") return `<path class="wave back" d="${WAVE}" transform="translate(-12 2)"/><path class="wave front" d="${WAVE}"/>`;
+    const r = rng(hash(key + type)); let s = "";
+    const f = (n) => n.toFixed(1);
+    if (type === "candy") {
+      const cols = ["#FF5A7A", "#FFC93C", "#4CC3FF", "#7BE07B", "#B98CFF", "#FF9F45"];
+      for (let row = 0; row < 11; row++) for (let x = 14 + (row % 2) * 6; x < 92; x += 12) {
+        const cx = x + (r() - .5) * 3, cy = 5 + row * 9.5 + (row === 0 ? -r() * 3 : (r() - .5) * 2), rad = 4.6 + r() * .9;
+        s += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad)}" fill="${cols[Math.floor(r() * cols.length)]}"/><circle cx="${f(cx - 1.5)}" cy="${f(cy - 1.6)}" r="1.3" fill="#FFF" opacity=".7"/>`;
+      }
+    } else if (type === "kisses") {
+      for (let row = 0; row < 11; row++) for (let x = 14 + (row % 2) * 6; x < 92; x += 12) {
+        const cx = x + (r() - .5) * 3, cy = 6 + row * 10 + (row === 0 ? -r() * 3 : 0), rot = (r() - .5) * 30, foil = r() < .65;
+        s += `<g transform="translate(${f(cx)} ${f(cy)}) rotate(${f(rot)})"><path d="M0 -7 C.8 -4.5 5.5 -1 5.5 2.5 C5.5 5.5 3 7 0 7 C-3 7 -5.5 5.5 -5.5 2.5 C-5.5 -1 -.8 -4.5 0 -7Z" fill="${foil ? "#C9CFD8" : "#6B3F1F"}" stroke="${foil ? "#8E97A3" : "#4A2A12"}" stroke-width=".6"/><path d="M-2 0 Q-1 -3 0 -5" stroke="#FFF" stroke-width=".9" fill="none" opacity=".7"/><path d="M0 -7 q2 -3 4.5 -3.5" stroke="#F4F6FA" stroke-width="1.1" fill="none"/></g>`;
+      }
+    } else if (type === "cash") {
+      for (let row = 0; row < 16; row++) for (let k = 0; k < 3; k++) {
+        const cx = 18 + k * 30 + (r() - .5) * 16, cy = 4 + row * 7 + (row === 0 ? -r() * 3 : 0), rot = (r() - .5) * 50;
+        s += `<g transform="translate(${f(cx)} ${f(cy)}) rotate(${f(rot)})"><rect x="-14" y="-6.5" width="28" height="13" rx="1.5" fill="#5DBB75" stroke="#2F7D46" stroke-width=".8"/><rect x="-11" y="-4" width="22" height="8" rx="1" fill="none" stroke="#2F7D46" stroke-width=".5" opacity=".6"/><circle r="3.2" fill="#E8F5E9"/><text y="2" text-anchor="middle" font-size="5" font-weight="700" fill="#2F7D46">$</text></g>`;
+      }
+    } else if (type === "coins") {
+      for (let row = 0; row < 22; row++) for (let x = 16 + (row % 2) * 7; x < 92; x += 14) {
+        const cx = x + (r() - .5) * 4, cy = 3 + row * 5 + (row === 0 ? -r() * 2 : 0);
+        s += `<ellipse cx="${f(cx)}" cy="${f(cy + 1.6)}" rx="7.6" ry="3.4" fill="#B9851A"/><ellipse cx="${f(cx)}" cy="${f(cy)}" rx="7.6" ry="3.4" fill="#F5C542"/><ellipse cx="${f(cx)}" cy="${f(cy)}" rx="5" ry="2.1" fill="none" stroke="#E0A526" stroke-width=".8"/>`;
+      }
+    }
+    return s;
+  }
+  function jarArt(key, frac, emoji, type) {
     const clip = "jc-" + String(key).replace(/[^A-Za-z0-9_-]/g, "");
-    const from = lastLevel[key] ?? 0;
-    lastLevel[key] = frac;
+    const lk = key + ":" + type;
+    const from = lastLevel[lk] ?? 0;
+    lastLevel[lk] = frac;
     return `<svg viewBox="0 0 100 132" aria-hidden="true">
         <defs><clipPath id="${clip}"><path d="${JAR_BODY}"/></clipPath></defs>
         <path class="glass" d="${JAR_BODY}"/>
         <g clip-path="url(#${clip})">
-          <g class="liquid" style="transform:translateY(${levelY(from)}px)" data-to="${levelY(frac)}">
-            <path class="wave back" d="${WAVE}" transform="translate(-12 2)"/>
-            <path class="wave front" d="${WAVE}"/>
-          </g>
+          <g class="liquid" style="transform:translateY(${levelY(from)}px)" data-to="${levelY(frac)}">${contents(type, key)}</g>
         </g>
         <path class="glass-edge" d="${JAR_BODY}"/>
         <rect class="shine" x="24" y="42" width="7" height="46" rx="3.5"/>
@@ -487,6 +799,46 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
     }));
   }
 
+  /* ---------- the box of jars, seen from the top ---------- */
+  function boxView(buckets, by) {
+    const n = buckets.length;
+    const cols = n <= 4 ? Math.max(n, 1) : n <= 8 ? Math.ceil(n / 2) : Math.ceil(n / 3);
+    const rows = Math.max(1, Math.ceil(n / cols));
+    const IW = 240, cell = Math.min(IW / cols, 78), IH = rows * cell + 8;
+    const ix = 40, iy = 46, W = 320, H = iy + IH + 8 + 40;
+    const wl = ix - 8, wr = ix + IW + 8, wt = iy - 8, wb = iy + IH + 8;
+    let lids = "";
+    buckets.forEach((b, i) => {
+      const row = Math.floor(i / cols), col = i % cols, inRow = Math.min(cols, n - row * cols);
+      const cx = ix + IW / 2 + (col - (inRow - 1) / 2) * (IW / cols), cy = iy + 4 + cell * (row + .5);
+      const rad = cell * .4, lim = Number(b.limit) || 0, over = lim - (by[b.id] || 0) < 0;
+      const fs = Math.max(7, Math.min(13, rad * .36, (rad * 1.75) / (b.name.length * .58))), maxCh = Math.max(3, Math.floor((rad * 1.75) / (fs * .58)));
+      const name = b.name.length > maxCh ? b.name.slice(0, maxCh - 1).trimEnd() + "…" : b.name;
+      lids += `<g class="lid-g ${over ? "over" : ""}" style="--c:${bucketColor(b)}" data-open="${esc(b.id)}" role="button" aria-label="${esc(b.name)}">
+        <circle class="l-glass" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(rad * 1.13).toFixed(1)}"/>
+        <circle class="l-rim" cx="${cx.toFixed(1)}" cy="${(cy + 2).toFixed(1)}" r="${rad.toFixed(1)}"/>
+        <circle class="l-top" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(rad * .9).toFixed(1)}"/>
+        <circle class="l-ring" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(rad * .74).toFixed(1)}"/>
+        <text x="${cx.toFixed(1)}" y="${(cy - rad * .12).toFixed(1)}" font-size="${(fs * 1.35).toFixed(1)}" text-anchor="middle">${esc(b.emoji || "🫙")}</text>
+        <text class="l-name" x="${cx.toFixed(1)}" y="${(cy + rad * .5).toFixed(1)}" font-size="${fs.toFixed(1)}">${esc(name)}</text>
+      </g>`;
+    });
+    if (!n) lids = `<text class="b-print" x="${ix + IW / 2}" y="${iy + IH / 2 + 5}" font-size="13" text-anchor="middle" style="fill:#EBD3B0">Your jars go here</text>`;
+    return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
+        <polygon class="b-flap" points="${wl},${wt} ${wr},${wt} ${wr - 18},${wt - 34} ${wl + 18},${wt - 34}"/>
+        <polygon class="b-flap" points="${wl},${wb} ${wr},${wb} ${wr - 18},${wb + 34} ${wl + 18},${wb + 34}"/>
+        <polygon class="b-flap" points="${wl},${wt} ${wl},${wb} ${wl - 30},${wb - 14} ${wl - 30},${wt + 14}"/>
+        <polygon class="b-flap" points="${wr},${wt} ${wr},${wb} ${wr + 30},${wb - 14} ${wr + 30},${wt + 14}"/>
+        <rect class="b-ribbon" x="${W / 2 - 9}" y="${wt - 34}" width="18" height="34"/><rect class="b-ribbon" x="${W / 2 - 9}" y="${wb}" width="18" height="34"/>
+        <rect class="b-ribbon" x="${wl - 30}" y="${(wt + wb) / 2 - 9}" width="30" height="18"/><rect class="b-ribbon" x="${wr}" y="${(wt + wb) / 2 - 9}" width="30" height="18"/>
+        <text class="b-print" x="${wl - 15}" y="${wt + 34}" font-size="12" text-anchor="middle">↑</text>
+        <text class="b-print" x="${wr + 15}" y="${wt + 34}" font-size="12" text-anchor="middle">↑</text>
+        <rect class="b-wall" x="${wl}" y="${wt}" width="${wr - wl}" height="${wb - wt}" rx="3"/>
+        <rect class="b-inside" x="${ix}" y="${iy}" width="${IW}" height="${IH}" rx="2"/>
+        ${lids}
+      </svg>`;
+  }
+
   /* ---------- render ---------- */
   function render() {
     $("monthLabel").textContent = monthName(state.month);
@@ -495,7 +847,6 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
     const buckets = sortedBuckets();
     const loading = !state.loaded.buckets || !state.loaded.spends;
 
-    // summary
     const limit = buckets.reduce((a, b) => a + (Number(b.limit) || 0), 0);
     const spent = buckets.reduce((a, b) => a + (by[b.id] || 0), 0);
     const left = limit - spent;
@@ -503,104 +854,138 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
     if (state.month === curMonth() && limit > 0) {
       const dLeft = daysIn(state.month) - new Date().getDate() + 1;
       pace = left > 0 ? `${dLeft} day${dLeft === 1 ? "" : "s"} left in ${monthName(state.month).split(" ")[0]} · about ${money(left / dLeft)} a day to stay on track` : `${dLeft} day${dLeft === 1 ? "" : "s"} left and you're over budget`;
-    } else if (state.month < curMonth()) {
+    } else if (state.month < curMonth() && limit > 0) {
       pace = left >= 0 ? `Finished ${money(left)} under budget` : `Finished ${money(-left)} over budget`;
     }
     const segs = limit > 0 ? buckets.map((b) => { const w = Math.min(by[b.id] || 0, b.limit) / Math.max(limit, spent) * 100; return w > 0 ? `<i style="width:${w}%;background:${bucketColor(b)}" title="${esc(b.name)}"></i>` : ""; }).join("") : "";
-    // Box of new mason jars: one jar per budget jar (at least 3), lids in each jar's color.
-    const n = Math.min(8, Math.max(3, buckets.length));
-    const slot = 268 / n, jw = Math.min(50, slot - 6);
-    let jarsSvg = "";
-    for (let i = 0; i < n; i++) {
-      const cx = 26 + slot * (i + 0.5), top = 22 + (i % 2) * 5, b = buckets[i];
-      const lid = b ? `color-mix(in srgb, ${bucketColor(b)} 85%, #000)` : "#B9C2C8";
-      const band = b ? bucketColor(b) : "#D5DCE0";
-      const x = cx - jw / 2;
-      jarsSvg += `<g>
-        <rect class="m-glass" x="${x.toFixed(1)}" y="${(top + 17).toFixed(1)}" width="${jw.toFixed(1)}" height="${(120 - top).toFixed(1)}" rx="${(jw * .24).toFixed(1)}"/>
-        <rect class="m-shine" x="${(x + jw * .16).toFixed(1)}" y="${(top + 28).toFixed(1)}" width="${(jw * .1).toFixed(1)}" height="22" rx="2"/>
-        <rect x="${(cx - jw * .38).toFixed(1)}" y="${(top + 6).toFixed(1)}" width="${(jw * .76).toFixed(1)}" height="12" rx="2" style="fill:${band}"/>
-        <line class="m-ridge" x1="${(cx - jw * .38).toFixed(1)}" y1="${(top + 10).toFixed(1)}" x2="${(cx + jw * .38).toFixed(1)}" y2="${(top + 10).toFixed(1)}"/>
-        <line class="m-ridge" x1="${(cx - jw * .38).toFixed(1)}" y1="${(top + 14).toFixed(1)}" x2="${(cx + jw * .38).toFixed(1)}" y2="${(top + 14).toFixed(1)}"/>
-        <rect x="${(cx - jw * .42).toFixed(1)}" y="${top.toFixed(1)}" width="${(jw * .84).toFixed(1)}" height="8" rx="3" style="fill:${lid}"/>
-      </g>`;
-    }
     $("summary").innerHTML = loading ? `<div class="eyebrow" style="text-align:center">Loading your budget…</div>` : `
-      <div class="jarbox">
-        <svg viewBox="0 0 320 190" aria-hidden="true">
-          <polygon class="b-flap" points="16,86 64,86 40,44 4,56"/>
-          <polygon class="b-flap" points="256,86 304,86 316,56 280,44"/>
-          <rect class="b-inside" x="16" y="74" width="288" height="14"/>
-          ${jarsSvg}
-          <rect class="b-front" x="16" y="84" width="288" height="102" rx="5"/>
-          <rect class="b-rim" x="16" y="84" width="288" height="9" rx="3"/>
-          <rect class="b-ribbon" x="150" y="84" width="20" height="102"/>
-          <rect class="b-label" x="84" y="106" width="152" height="65" rx="7"/>
-          <text class="b-print" x="34" y="126">↑↑</text>
-          <text class="b-print" x="262" y="126">↑↑</text>
-        </svg>
-        <div class="box-label ${left < 0 ? "over" : ""}">
-          <div class="eyebrow">${left >= 0 ? "Left in all jars" : "Over budget by"}</div>
-          <div class="big num">${money(Math.abs(left))}</div>
-        </div>
+      <div class="jarbox">${boxView(buckets, by)}</div>
+      <div class="box-sticker ${left < 0 ? "over" : ""}">
+        <div class="eyebrow">${left >= 0 ? "Left in all jars" : "Over budget by"}</div>
+        <div class="big num">${money(Math.abs(left))}</div>
       </div>
       <div class="sum-line num"><span><b>${money(spent)}</b> spent</span><span><b>${money(limit)}</b> budgeted</span><span><b>${buckets.length}</b> jar${buckets.length === 1 ? "" : "s"}</span></div>
       <div class="stack" role="img" aria-label="${money(spent)} of ${money(limit)} spent">${segs}</div>
       ${pace ? `<div class="pace">${pace}</div>` : ""}`;
 
-    // jars
     $("jars").innerHTML = loading ? "" : buckets.map((b) => {
       const sp = by[b.id] || 0, lim = Number(b.limit) || 0, lf = lim - sp;
       const frac = lim > 0 ? Math.max(0, Math.min(1, lf / lim)) : 0;
       const used = lim > 0 ? sp / lim : 0;
       const pill = lf < 0 ? `<span class="pill bad">Over</span>` : used >= 0.85 ? `<span class="pill warn">Almost out</span>` : "";
-      return `<button class="jar ${lf < 0 ? "over" : ""}" style="--c:${bucketColor(b)}" data-open="${esc(b.id)}" aria-label="${esc(b.name)}: ${lf < 0 ? money(-lf) + " over" : money(lf) + " left"} of ${money(lim)}">
+      return `<button class="jar ${lf < 0 ? "over" : ""}" style="--c:${bucketColor(b)}" data-open="${esc(b.id)}" data-id="${esc(b.id)}" aria-label="${esc(b.name)}: ${lf < 0 ? money(-lf) + " over" : money(lf) + " left"} of ${money(lim)}">
         ${pill}
         <div class="jar-art">
-          ${jarArt(b.id, frac, b.emoji || "🫙")}
+          ${jarArt(b.id, frac, b.emoji || "🫙", fillOf(b))}
           <div class="jar-label num"><small>${lf < 0 ? "over" : "left"}</small>${lf < 0 ? "−" + money(-lf) : money(lf)}</div>
         </div>
         <div class="jar-name">${esc(b.name)}</div>
         <div class="jar-sub num">of ${money(lim)}</div>
       </button>`;
-    }).join("") + (loading ? "" : `<button class="jar add" data-new-bucket><span>+</span><span>${buckets.length ? "New jar" : "Make your first jar"}</span></button>`);
+    }).join("") + (loading || state.readOnly ? "" : `<button class="jar add" data-new-bucket><span>+</span><span>${buckets.length ? "New jar" : "Make your first jar"}</span></button>`);
     pourJars();
-
-    // activity
-    const bmap = Object.fromEntries(state.buckets.map((b) => [b.id, b]));
-    const rows = [...ms].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || 0) - (a.createdAt || 0));
-    $("activity").innerHTML = loading ? `<div class="empty">Loading…</div>` : rows.length ? rows.slice(0, 30).map((s) => spendRow(s, bmap[s.bucketId])).join("") : `<div class="empty">No spending logged for ${monthName(state.month)} yet. Tap <b>Add spend</b> to log your first one.</div>`;
+    $("dragHint").textContent = buckets.length > 1 && !state.readOnly ? "· hold to move" : "";
+    $("clipCount").hidden = !ms.length; $("clipCount").textContent = ms.length;
 
     $("fab").hidden = state.readOnly;
+    $("newBucketTop").hidden = state.readOnly;
+    if (drawer.open) renderDrawer();
     if (sheet && sheet.kind === "detail") renderSheet();
   }
-  function spendRow(s, b) {
+  function spendRow(s, b, showDate = true) {
     return `<div class="row" style="--c:${bucketColor(b)}">
       <div class="row-emoji" aria-hidden="true">${esc(b?.emoji || "🫙")}</div>
-      <div class="row-main"><div class="row-title">${esc(s.note || b?.name || "Spend")}</div><div class="row-meta">${esc(b?.name || "Deleted jar")} · ${shortDate(s.date)}</div></div>
+      <div class="row-main"><div class="row-title">${esc(s.note || b?.name || "Spend")}</div><div class="row-meta">${esc(b?.name || "Deleted jar")}${showDate ? " · " + shortDate(s.date) : ""}</div></div>
       <div class="row-amt num">${money(Number(s.amount) || 0)}</div>
       ${state.readOnly ? "" : `<button class="row-del" data-del-spend="${esc(s.id)}" aria-label="Delete this spend">×</button>`}
     </div>`;
   }
 
-  /* ---------- sheets ---------- */
-  // Sheets push a history entry so Android's back button closes them instead of the app.
-  function openSheet(s) { if (!sheet) history.pushState({ sheet: 1 }, ""); sheet = s; renderSheet(); setTimeout(() => { const f = document.querySelector("#sheetRoot [autofocus]"); if (f && window.matchMedia("(pointer:fine)").matches) f.focus(); }, 30); }
-  function hideSheet() { sheet = null; $("sheetRoot").innerHTML = ""; }
-  function closeSheet() { const had = !!sheet; hideSheet(); if (had && history.state && history.state.sheet) history.back(); }
-  window.addEventListener("popstate", hideSheet);
+  /* ---------- expenses drawer ---------- */
+  function openDrawer() { if (drawer.open) return; drawer.open = true; pushLayer("drawer"); renderDrawer(); $("drawerScrim").hidden = false; requestAnimationFrame(() => { $("drawer").classList.add("open"); $("drawer").setAttribute("aria-hidden", "false"); }); $("clipTab").hidden = true; }
+  function closeDrawer(fromPop) {
+    if (!drawer.open) return;
+    drawer.open = false; if (!fromPop) popLayer("drawer");
+    $("drawer").classList.remove("open"); $("drawer").setAttribute("aria-hidden", "true"); $("drawerScrim").hidden = true; $("clipTab").hidden = false;
+  }
+  function renderDrawer() {
+    const { ms } = totals();
+    const bmap = Object.fromEntries(state.buckets.map((b) => [b.id, b]));
+    if (drawer.filter !== "all" && !bmap[drawer.filter]) drawer.filter = "all";
+    const list = ms.filter((s) => drawer.filter === "all" || s.bucketId === drawer.filter)
+      .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || 0) - (a.createdAt || 0));
+    const total = list.reduce((a, s) => a + (Number(s.amount) || 0), 0);
+    let body = "", day = "";
+    list.forEach((s) => {
+      if (s.date !== day) {
+        day = s.date;
+        const dayTotal = list.filter((x) => x.date === day).reduce((a, x) => a + (Number(x.amount) || 0), 0);
+        body += `<div class="day-head"><span>${esc(dayLabel(day))}</span><span class="num">${money(dayTotal)}</span></div>`;
+      }
+      body += spendRow(s, bmap[s.bucketId], false);
+    });
+    $("drawerBody").innerHTML = `
+      <div class="drawer-head">
+        <div class="sheet-head"><h3>📎 Expenses</h3><button class="x" data-close-drawer aria-label="Close expenses">×</button></div>
+        <div class="row-meta">${monthName(state.month)} · <b class="num" style="color:var(--ink)">${money(total)}</b> across ${list.length} spend${list.length === 1 ? "" : "s"}</div>
+        <div class="chips">
+          <button class="chip" data-dfilter="all" aria-pressed="${drawer.filter === "all"}">All</button>
+          ${sortedBuckets().map((b) => `<button class="chip" style="--c:${bucketColor(b)}" data-dfilter="${esc(b.id)}" aria-pressed="${drawer.filter === b.id}">${esc(b.emoji || "🫙")} ${esc(b.name)}</button>`).join("")}
+        </div>
+      </div>
+      <div class="drawer-list">${body || `<div class="empty">No spends here for ${monthName(state.month).split(" ")[0]} yet. Tap <b>Add spend</b> to log one.</div>`}</div>`;
+  }
 
-  function renderSheet() {
+  /* ---------- confirm dialog ---------- */
+  let confirmResolve = null;
+  function ask({ title, text, yes = "Delete", no = "Keep it", danger = true }) {
+    return new Promise((resolve) => {
+      confirmResolve = resolve;
+      $("confirmRoot").innerHTML = `<div class="scrim confirm-scrim" data-confirm-scrim><div class="dialog" role="alertdialog" aria-modal="true" aria-label="${esc(title)}">
+        <h3>${title}</h3><p>${text}</p>
+        <div class="actions"><button class="btn" data-ans="0">${esc(no)}</button><button class="btn ${danger ? "danger solid" : "primary"}" data-ans="1">${esc(yes)}</button></div>
+      </div></div>`;
+      pushLayer("confirm");
+      setTimeout(() => { const b = document.querySelector('[data-ans="0"]'); if (b) b.focus(); }, 30);
+    });
+  }
+  function answerConfirm(v, fromPop) {
+    if (!confirmResolve) return;
+    const r = confirmResolve; confirmResolve = null;
+    $("confirmRoot").innerHTML = "";
+    if (!fromPop) popLayer("confirm");
+    r(v);
+  }
+
+  /* ---------- sheets ---------- */
+  function openSheet(s) {
+    const fresh = !sheet;
+    sheet = s;
+    if (fresh) pushLayer("sheet");
+    renderSheet(true);
+    setTimeout(() => { const f = document.querySelector("#sheetRoot [autofocus]"); if (f && window.matchMedia("(pointer:fine)").matches) f.focus(); }, 30);
+  }
+  function closeSheet(fromPop) {
+    if (!sheet) return;
+    const was = sheet.kind;
+    sheet = null; $("sheetRoot").innerHTML = "";
+    if (!fromPop) popLayer("sheet");
+    if (was === "whatsnew" || was === "remindAsk") afterOnboarding(was);
+  }
+
+  function renderSheet(anim) {
     if (!sheet) return;
     let html = "";
     if (sheet.kind === "spend") {
       const buckets = sortedBuckets();
+      const v = evalAmount(sheet.amount || "");
       html = `<div class="sheet-head"><h3>Add spend</h3><button class="x" data-close aria-label="Close">×</button></div>
-        <form id="spendForm" style="display:grid;gap:16px">
+        <form id="spendForm" style="display:grid;gap:14px" novalidate>
           <label class="f">Amount
             <div class="amount-wrap"><span>${esc(currency.symbol)}</span><input class="t amount num" id="spAmount" inputmode="decimal" autocomplete="off" placeholder="0" style="padding-left:${22 + currency.symbol.length * 20}px" value="${esc(sheet.amount || "")}" autofocus></div>
           </label>
-          <div class="f" style="display:grid;gap:6px;font-weight:600;font-size:.9rem">Which jar?
+          <div class="ops"><button type="button" data-op="+" aria-label="Plus">+</button><button type="button" data-op="-" aria-label="Minus">−</button><span class="calc num" id="amtCalc">${hasOps(sheet.amount || "") && isFinite(v) ? "= " + esc(money(v)) : ""}</span></div>
+          <div class="f">Which jar?
             <div class="chips">${buckets.map((b) => `<button type="button" class="chip" style="--c:${bucketColor(b)}" data-pick="${esc(b.id)}" aria-pressed="${sheet.bucketId === b.id}">${esc(b.emoji || "🫙")} ${esc(b.name)}</button>`).join("")}</div>
           </div>
           <div class="two">
@@ -611,27 +996,33 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
           <div class="actions"><button class="btn primary" type="submit">Add spend</button></div>
         </form>`;
     } else if (sheet.kind === "bucket") {
-      const b = sheet.draft;
+      const b = sheet.draft, buckets = sortedBuckets(), idx = sheet.id ? buckets.findIndex((x) => x.id === sheet.id) : -1;
       html = `<div class="sheet-head"><h3>${sheet.id ? "Edit jar" : "New jar"}</h3><button class="x" data-close aria-label="Close">×</button></div>
-        <form id="bucketForm" style="display:grid;gap:16px">
+        <form id="bucketForm" style="display:grid;gap:16px" novalidate>
           ${sheet.id ? "" : `<div class="chips">${PRESETS.filter(([n]) => !state.buckets.some((x) => x.name.toLowerCase() === n.toLowerCase())).map(([n, e]) => `<button type="button" class="chip" data-preset="${esc(n)}|${e}">${e} ${esc(n)}</button>`).join("")}</div>`}
           <div class="two">
             <label class="f">Name <input class="t" id="bkName" maxlength="40" placeholder="Groceries" value="${esc(b.name)}" autofocus></label>
             <label class="f">Monthly limit <div class="amount-wrap"><span style="font-size:1.1rem;left:14px">${esc(currency.symbol)}</span><input class="t num" id="bkLimit" inputmode="decimal" placeholder="600" style="padding-left:${18 + currency.symbol.length * 11}px" value="${esc(b.limit)}"></div></label>
           </div>
-          <div class="f" style="display:grid;gap:6px;font-weight:600;font-size:.9rem">Icon
+          <div class="f">Icon
             <div class="emojis">${EMOJIS.map((e) => `<button type="button" data-emoji="${e}" aria-pressed="${b.emoji === e}" aria-label="${e}">${e}</button>`).join("")}</div>
           </div>
-          <div class="f" style="display:grid;gap:6px;font-weight:600;font-size:.9rem">Color
+          <div class="f">Color
             <div class="swatches">${Array.from({ length: COLORS }, (_, i) => `<button type="button" data-color="${i}" style="background:var(--j${i})" aria-pressed="${b.color === i}" aria-label="Color ${i + 1}"></button>`).join("")}</div>
           </div>
+          <div class="f">What's inside?
+            <div class="chips">${[["surprise", "Surprise me", "🎲"], ...FILLS].map(([id, label, e]) => `<button type="button" class="chip" data-fill="${id}" aria-pressed="${(b.fill || "surprise") === id}">${e} ${label}</button>`).join("")}</div>
+          </div>
+          ${sheet.id && buckets.length > 1 ? `<div class="f">Position
+            <div class="actions"><button type="button" class="btn" data-move="-1" ${idx <= 0 ? "disabled" : ""}>← Earlier</button><button type="button" class="btn" data-move="1" ${idx >= buckets.length - 1 ? "disabled" : ""}>Later →</button></div>
+          </div>` : ""}
           ${sheet.error ? `<div class="err">${esc(sheet.error)}</div>` : ""}
           <div class="actions"><button class="btn primary" type="submit">${sheet.id ? "Save jar" : "Create jar"}</button></div>
         </form>`;
     } else if (sheet.kind === "settings") {
-      const cur = currentTheme();
+      const cur = currentTheme(), ln = !!LN();
       html = `<div class="sheet-head"><h3>Settings</h3><button class="x" data-close aria-label="Close">×</button></div>
-        <div class="f" style="display:grid;gap:8px;font-weight:600;font-size:.9rem">Theme
+        <div class="f">Theme
           <div class="themes">${THEMES.map((th) => `<button class="theme-opt" data-pick-theme="${th.id}" aria-pressed="${cur === th.id}">
             <span class="swatch" aria-hidden="true">${th.sw.map((c) => `<i style="background:${c}"></i>`).join("")}</span>
             <span><b>${th.name}</b><span>${th.desc}</span></span>
@@ -640,7 +1031,43 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
         <label class="f">Currency
           <select class="t" id="curSel">${CURRENCIES.map(([code, name]) => `<option value="${code}" ${code === currency.code ? "selected" : ""}>${code} · ${name}</option>`).join("")}</select>
           <span class="row-meta" style="font-weight:400">Example: ${esc(money(1234.5))}. Changing currency relabels your amounts; it doesn't convert them.</span>
-        </label>`;
+        </label>
+        <div class="set-row"><span>🔔 Cha-ching sound<small>Plays when you add a spend</small></span><span class="switch"><input type="checkbox" id="soundToggle" aria-label="Cha-ching sound" ${prefs.sound ? "checked" : ""}><i></i></span></div>
+        ${ln ? `<div class="set-row"><span>🌙 Daily reminder<small>A gentle nudge to log your spends</small></span><span class="switch"><input type="checkbox" id="remToggle" aria-label="Daily reminder" ${prefs.reminder.on ? "checked" : ""}><i></i></span></div>
+        ${prefs.reminder.on ? `<div class="set-row"><span>Remind me at</span><input type="time" id="remTime" value="${esc(prefs.reminder.time)}"></div>` : ""}` : ""}
+        <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
+        <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button></div>
+        <div class="version">Little Jars ${APP_VERSION}</div>`;
+    } else if (sheet.kind === "feature") {
+      html = `<div class="sheet-head"><h3>💌 Request a feature</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <form id="featureForm" style="display:grid;gap:14px" novalidate>
+          <label class="f">What would make Little Jars better?<textarea class="t" id="ftIdea" maxlength="1500" placeholder="I wish my jars could…" autofocus>${esc(sheet.idea || "")}</textarea></label>
+          <label class="f">Your name (optional) <input class="t" id="ftName" maxlength="60" value="${esc(sheet.name || "")}"></label>
+          ${sheet.error ? `<div class="err">${esc(sheet.error)}</div>` : ""}
+          <div class="actions"><button class="btn primary" type="submit">Send to the Little Jars team</button></div>
+          <div class="row-meta">This opens your email app with your note ready to send to ${SUPPORT_EMAIL}.</div>
+          ${sheet.tried ? `<div class="f">Email app didn't open? Send it to:<div class="copy-box"><code>${SUPPORT_EMAIL}</code><button type="button" class="btn" data-copy-feature>Copy note</button></div></div>` : ""}
+        </form>`;
+    } else if (sheet.kind === "whatsnew") {
+      const items = [
+        ["🫙", "We're <b>Little Jars</b> now! Same jars, cuter name."],
+        ["🍬", "Jars got snacks: liquid, candy, chocolate kisses, cash or coins. Edit a jar to pick, or let us surprise you."],
+        ["📦", "Peek into the box from the top. Every lid wears its name tag."],
+        ["📎", "Expenses moved into a drawer. Tug the paper clip on the right."],
+        ["🔔", "Cha-ching! Spends now jingle. (Shh, you can mute it in Settings.)"],
+        ["🧮", "Math mode: type 12+10 and we'll do the homework."],
+        ["🫳", "Hold a jar and drag it to put your favorites first."],
+        ...(LN() ? [["🌙", "Gentle evening nudges to log your day. We promise to be nice."]] : []),
+        ["🙅", "Oops-proofing: we now double-check before deleting anything, and stop you from making two jars with the same name."],
+        ["💌", "Got an idea? Settings → Request a feature. We read every single one."],
+      ];
+      html = `<div class="sheet-head"><h3>Psst… we've been busy ✨</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <ul class="news">${items.map(([e, t]) => `<li><span aria-hidden="true">${e}</span><div>${t}</div></li>`).join("")}</ul>
+        <div class="actions"><button class="btn" data-replay-tour>Show me around</button><button class="btn primary" data-close>Let's go!</button></div>`;
+    } else if (sheet.kind === "remindAsk") {
+      html = `<div class="sheet-head"><h3>🌙 Want a gentle nudge?</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <p style="margin:0">We can send one friendly reminder at <b>9 PM</b> to log your spends. No nagging, promise. You can change the time or turn it off in Settings.</p>
+        <div class="actions"><button class="btn" data-remind-no>Not now</button><button class="btn primary" data-remind-yes>Yes please</button></div>`;
     } else if (sheet.kind === "detail") {
       const b = state.buckets.find((x) => x.id === sheet.id);
       if (!b) { closeSheet(); return; }
@@ -651,9 +1078,9 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
       html = `<div class="sheet-head"><h3>${esc(b.emoji || "🫙")} ${esc(b.name)}</h3><button class="x" data-close aria-label="Close">×</button></div>
         <div class="detail-top" style="--c:${bucketColor(b)}">
           <div class="eyebrow">${monthName(state.month)}</div>
-          <div class="big num ${lf < 0 ? "over" : ""}" style="font-size:2.4rem">${lf < 0 ? money(-lf) + " over" : money(lf) + " left"}</div>
+          <div class="big num ${lf < 0 ? "over" : ""}" style="font-size:2.4rem;${lf < 0 ? "color:var(--danger)" : ""}">${lf < 0 ? money(-lf) + " over" : money(lf) + " left"}</div>
           <div class="bar"><i style="width:${lim > 0 ? Math.min(100, sp / lim * 100) : 0}%"></i></div>
-          <div class="pace num">${money(sp)} spent of ${money(lim)}</div>
+          <div class="pace num" style="text-align:left">${money(sp)} spent of ${money(lim)}</div>
         </div>
         <div class="detail-list">${list.length ? list.map((s) => spendRow(s, b)).join("") : `<div class="empty">Nothing spent from this jar in ${monthName(state.month).split(" ")[0]}.</div>`}</div>
         ${state.readOnly ? "" : sheet.confirmDelete ? `<div class="confirm"><div>Delete <b>${esc(b.name)}</b>${all ? ` and its ${all} logged spend${all === 1 ? "" : "s"} (all months)` : ""}? This can't be undone.</div>
@@ -661,39 +1088,84 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
         : `<div class="actions"><button class="btn primary" data-spend-in="${esc(b.id)}">Add spend here</button><button class="btn" data-edit="${esc(b.id)}">Edit</button><button class="btn danger" data-delete-bucket>Delete</button></div>`}`;
     }
     const active = document.activeElement && document.activeElement.id;
-    $("sheetRoot").innerHTML = `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+    const prevScroll = document.querySelector("#sheetRoot .sheet")?.scrollTop || 0;
+    $("sheetRoot").innerHTML = `<div class="scrim" data-scrim><div class="sheet ${anim ? "anim" : ""}" role="dialog" aria-modal="true">${html}</div></div>`;
+    const sh = document.querySelector("#sheetRoot .sheet"); if (sh && !anim) sh.scrollTop = prevScroll;
     if (active && $(active)) $(active).focus();
   }
 
-  // keep typed values in the sheet state so re-renders don't lose them
+  // Keep typed values in the sheet state so re-renders don't lose them.
   document.addEventListener("input", (e) => {
     if (!sheet) return;
     const t = e.target;
-    if (t.id === "spAmount") sheet.amount = t.value;
+    if (t.id === "spAmount" || t.id === "bkLimit") {
+      const c = cleanAmount(t.value);
+      if (c !== t.value) { const pos = Math.max(0, (t.selectionStart || 0) - (t.value.length - c.length)); t.value = c; try { t.setSelectionRange(pos, pos); } catch {} }
+      if (t.id === "spAmount") {
+        sheet.amount = c;
+        const v = evalAmount(c), calc = $("amtCalc");
+        if (calc) calc.textContent = hasOps(c) && isFinite(v) ? "= " + money(v) : "";
+      } else sheet.draft.limit = c;
+    }
     if (t.id === "spNote") sheet.note = t.value;
     if (t.id === "spDate") sheet.date = t.value;
     if (t.id === "bkName") sheet.draft.name = t.value;
-    if (t.id === "bkLimit") sheet.draft.limit = t.value;
+    if (t.id === "ftIdea") sheet.idea = t.value;
+    if (t.id === "ftName") sheet.name = t.value;
+  });
+  // + and − buttons insert into the amount without closing the phone keyboard.
+  document.addEventListener("pointerdown", (e) => {
+    const b = e.target.closest("[data-op]"); if (!b) return;
+    e.preventDefault();
+    const inp = $("spAmount"); if (!inp) return;
+    const s = inp.selectionStart ?? inp.value.length, en = inp.selectionEnd ?? inp.value.length;
+    inp.value = inp.value.slice(0, s) + b.dataset.op + inp.value.slice(en);
+    inp.focus(); try { inp.setSelectionRange(s + 1, s + 1); } catch {}
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
   });
 
+  document.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.id === "curSel") { setCurrencyCode(t.value); prefs.currency = currency.code; savePrefs(); render(); renderSheet(); }
+    if (t.id === "soundToggle") { prefs.sound = t.checked; savePrefs(); if (prefs.sound) chaChing(); }
+    if (t.id === "remToggle") { prefs.reminder.on = t.checked; savePrefs(); renderSheet(); scheduleReminders(true); }
+    if (t.id === "remTime" && t.value) { prefs.reminder.time = t.value; savePrefs(); scheduleReminders(false); toast(`We'll nudge you at ${fmtTime(t.value)}`); }
+  });
+  const fmtTime = (hm) => { const [h, m] = hm.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); };
+
+  let suppressClickUntil = 0;
   document.addEventListener("click", async (e) => {
-    const t = e.target.closest("button, [data-scrim]");
+    if (Date.now() < suppressClickUntil) { e.preventDefault(); return; }
+    const t = e.target.closest("button, [data-open], [data-scrim], [data-confirm-scrim], #drawerScrim");
     if (!t) return;
+    if (t.matches("[data-confirm-scrim]") && e.target === t) return answerConfirm(false);
+    if (t.dataset.ans) return answerConfirm(t.dataset.ans === "1");
     if (t.matches("[data-scrim]") && e.target === t) return closeSheet();
+    if (t.id === "drawerScrim" || t.matches("[data-close-drawer]")) return closeDrawer();
     if (t.matches("[data-close]")) return closeSheet();
     if (t.id === "prevMonth") { state.month = shiftMonth(state.month, -1); return render(); }
     if (t.id === "nextMonth") { state.month = shiftMonth(state.month, 1); return render(); }
     if (t.id === "fab") return openAddSpend();
+    if (t.id === "clipTab") return openDrawer();
     if (t.id === "settingsBtn") return openSheet({ kind: "settings" });
-    if (t.dataset.pickTheme) { applyTheme(t.dataset.pickTheme); return renderSheet(); }
     if (t.id === "newBucketTop" || t.matches("[data-new-bucket]")) return openBucket();
+    if (t.dataset.dfilter) { drawer.filter = t.dataset.dfilter; return renderDrawer(); }
     if (t.dataset.open) return openSheet({ kind: "detail", id: t.dataset.open });
     if (t.dataset.spendIn) return openAddSpend(t.dataset.spendIn);
     if (t.dataset.edit) return openBucket(t.dataset.edit);
     if (t.dataset.pick) { sheet.bucketId = t.dataset.pick; sheet.error = ""; return renderSheet(); }
     if (t.dataset.emoji) { sheet.draft.emoji = t.dataset.emoji; return renderSheet(); }
     if (t.dataset.color) { sheet.draft.color = Number(t.dataset.color); return renderSheet(); }
-    if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; return renderSheet(); }
+    if (t.dataset.fill) { sheet.draft.fill = t.dataset.fill; return renderSheet(); }
+    if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; sheet.error = ""; return renderSheet(); }
+    if (t.dataset.move) { await moveBucket(sheet.id, Number(t.dataset.move)); return renderSheet(); }
+    if (t.dataset.pickTheme) { setTheme(t.dataset.pickTheme); savePrefs(); return renderSheet(); }
+    if (t.matches("[data-feature]")) return openSheet({ kind: "feature" });
+    if (t.matches("[data-copy-feature]")) return copyText(featureBody(), "Note copied. Paste it into an email to us.");
+    if (t.matches("[data-replay-tour]")) { tourActive = true; closeSheet(); return startTour(); }
+    if (t.matches("[data-whatsnew]")) return openSheet({ kind: "whatsnew" });
+    if (t.matches("[data-remind-yes]")) { lsSet("lj-reminder-asked", "1"); prefs.reminder = { on: true, time: prefs.reminder.time || "21:00" }; savePrefs(); closeSheet(); return scheduleReminders(true); }
+    if (t.matches("[data-remind-no]")) { lsSet("lj-reminder-asked", "1"); prefs.reminder.on = false; savePrefs(); return closeSheet(); }
     if (t.matches("[data-delete-bucket]")) { sheet.confirmDelete = true; return renderSheet(); }
     if (t.matches("[data-delete-bucket-no]")) { sheet.confirmDelete = false; return renderSheet(); }
     if (t.matches("[data-delete-bucket-yes]")) {
@@ -706,45 +1178,56 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
     if (t.dataset.delSpend) {
       const s = state.spends.find((x) => x.id === t.dataset.delSpend);
       if (!s) return;
-      const undo = { ...s }; delete undo.id;
-      await write(() => store.remove("spends", s.id));
-      toastUndo(`Removed ${money(Number(s.amount) || 0)}`, () => write(() => store.add("spends", undo), "Restored"));
+      const b = state.buckets.find((x) => x.id === s.bucketId);
+      const ok = await ask({ title: "Delete this spend?", text: `<b>${esc(money(Number(s.amount) || 0))}</b>${s.note ? ` · ${esc(s.note)}` : ""} from <b>${esc(b ? b.name : "this jar")}</b> on ${shortDate(s.date)}. This can't be undone.` });
+      if (ok) await write(() => store.remove("spends", s.id), `Deleted ${money(Number(s.amount) || 0)}`);
     }
   });
 
   document.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (e.target.id === "spendForm") {
-      const amt = parseAmt(sheet.amount);
-      if (!(amt > 0)) { sheet.error = "Enter an amount above $0."; return renderSheet(); }
+      const amt = evalAmount(sheet.amount || "");
+      if (!(amt > 0)) { sheet.error = "Enter an amount above 0."; return renderSheet(); }
+      if (amt > MAX_AMOUNT) { sheet.error = `That's more than ${money(MAX_AMOUNT)}. Try a smaller amount.`; return renderSheet(); }
       if (!sheet.bucketId) { sheet.error = "Pick a jar for this spend."; return renderSheet(); }
       const b = state.buckets.find((x) => x.id === sheet.bucketId);
       const data = { bucketId: sheet.bucketId, amount: amt, note: (sheet.note || "").trim(), date: sheet.date || todayStr(), createdAt: Date.now() };
       closeSheet();
       if (data.date.slice(0, 7) !== state.month) state.month = data.date.slice(0, 7);
-      await write(() => store.add("spends", data), `Added ${money(amt)} to ${b ? b.name : "jar"}`);
+      chaChing();
+      const ok = await write(() => store.add("spends", data), `Added ${money(amt)} to ${b ? b.name : "jar"}`);
+      if (ok && data.date === todayStr() && prefs.reminder.on) scheduleReminders(false);
     }
     if (e.target.id === "bucketForm") {
-      const d = sheet.draft, name = (d.name || "").trim(), lim = parseAmt(d.limit);
+      const d = sheet.draft, name = (d.name || "").trim(), lim = evalAmount(d.limit || "");
       if (!name) { sheet.error = "Give this jar a name."; return renderSheet(); }
+      const dup = state.buckets.find((x) => x.id !== sheet.id && x.name.trim().toLowerCase() === name.toLowerCase());
+      if (dup) { await ask({ title: "That jar already exists 🫙", text: `You already have a <b>${esc(dup.emoji || "🫙")} ${esc(dup.name)}</b> jar. Try a different name, or add spends to that one.`, yes: "Got it", no: "Cancel", danger: false }); return; }
       if (!(lim >= 0)) { sheet.error = "Enter a monthly limit, like 300."; return renderSheet(); }
-      const data = { name, limit: lim, emoji: d.emoji || "🫙", color: d.color ?? 0 };
+      if (lim > MAX_AMOUNT) { sheet.error = `That's more than ${money(MAX_AMOUNT)}. Try a smaller limit.`; return renderSheet(); }
+      const data = { name, limit: lim, emoji: d.emoji || "🫙", color: d.color ?? 0, fill: d.fill || "surprise" };
       const id = sheet.id;
       closeSheet();
       if (id) await write(() => store.update("buckets", id, data), `Saved ${name}`);
       else await write(() => store.add("buckets", { ...data, order: state.buckets.reduce((m, b) => Math.max(m, b.order ?? 0), 0) + 1, createdAt: Date.now() }), `Created ${name}`);
     }
+    if (e.target.id === "featureForm") {
+      if (!(sheet.idea || "").trim()) { sheet.error = "Tell us your idea first."; return renderSheet(); }
+      const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Little Jars feature request")}&body=${encodeURIComponent(featureBody())}`;
+      sheet.tried = true; sheet.error = ""; renderSheet();
+      try { window.location.href = url; } catch {}
+      toast("Opening your email app…");
+    }
   });
+  function featureBody() {
+    return `${(sheet && sheet.idea || "").trim()}\n\n— ${(sheet && sheet.name || "").trim() || "A Little Jars user"}\nLittle Jars ${APP_VERSION}${IS_NATIVE ? " (Android)" : IN_CLAUDE ? " (claude.ai)" : " (web)"}`;
+  }
+  async function copyText(text, msg) {
+    try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast("Couldn't copy. Long-press the email address to copy it."); }
+  }
 
-  document.addEventListener("change", (e) => {
-    if (e.target.id !== "curSel") return;
-    setCurrencyCode(e.target.value);
-    try { localStorage.setItem("budget-jars-currency", currency.code); } catch {}
-    savePrefs();
-    render(); renderSheet();
-  });
-
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet) closeSheet(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (tourActive) endTour(); else closeTop(); } });
 
   function openAddSpend(bucketId) {
     if (!state.buckets.length) return openBucket();
@@ -754,53 +1237,180 @@ select.t { appearance: none; -webkit-appearance: none; background-image: linear-
     const b = id && state.buckets.find((x) => x.id === id);
     const used = new Set(state.buckets.map((x) => x.color));
     let free = 0; while (used.has(free) && free < COLORS - 1) free++;
-    openSheet({ kind: "bucket", id: id || null, draft: b ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0 } : { name: "", limit: "", emoji: "🛒", color: free } });
+    openSheet({ kind: "bucket", id: id || null, draft: b ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0, fill: b.fill || "surprise" } : { name: "", limit: "", emoji: "🛒", color: free, fill: "surprise" } });
   }
 
+  /* ---------- reordering jars: long-press and drag, or the Earlier/Later buttons ---------- */
+  async function saveOrder(ids) {
+    const changed = ids.map((id, i) => [id, i + 1]).filter(([id, o]) => (state.buckets.find((b) => b.id === id) || {}).order !== o);
+    if (!changed.length) return;
+    await write(async () => { for (const [id, o] of changed) await store.update("buckets", id, { order: o }); });
+  }
+  async function moveBucket(id, delta) {
+    const ids = sortedBuckets().map((b) => b.id), i = ids.indexOf(id), j = i + delta;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    await saveOrder(ids);
+  }
+  let drag = null;
+  function pressStart(x, y, target) {
+    if (state.readOnly || drag) return;
+    const jar = target.closest && target.closest(".jar[data-id]"); if (!jar) return;
+    drag = { jar, x0: x, y0: y, x, y, active: false, timer: setTimeout(() => activateDrag(), 420) };
+  }
+  function activateDrag() {
+    if (!drag) return;
+    drag.active = true;
+    try { navigator.vibrate && navigator.vibrate(15); } catch {}
+    const g = drag.jar.cloneNode(true); g.classList.add("drag-ghost"); g.style.width = drag.jar.offsetWidth + "px";
+    g.style.left = drag.x + "px"; g.style.top = drag.y + "px"; document.body.appendChild(g); drag.ghost = g;
+    drag.jar.classList.add("drag-src");
+  }
+  function pressMove(x, y, ev) {
+    if (!drag) return;
+    drag.x = x; drag.y = y;
+    if (!drag.active) { if (Math.hypot(x - drag.x0, y - drag.y0) > 10) cancelDrag(); return; }
+    if (ev && ev.cancelable) ev.preventDefault();
+    drag.ghost.style.left = x + "px"; drag.ghost.style.top = y + "px";
+    const over = document.elementFromPoint(x, y), tj = over && over.closest(".jar[data-id]");
+    if (tj && tj !== drag.jar) {
+      const grid = $("jars"), kids = [...grid.children];
+      grid.insertBefore(drag.jar, kids.indexOf(tj) > kids.indexOf(drag.jar) ? tj.nextSibling : tj);
+    }
+    if (y < 70) window.scrollBy(0, -12); else if (y > innerHeight - 70) window.scrollBy(0, 12);
+  }
+  function cancelDrag() { if (!drag) return; clearTimeout(drag.timer); drag.ghost && drag.ghost.remove(); drag.jar.classList.remove("drag-src"); drag = null; }
+  async function pressEnd() {
+    if (!drag) return;
+    const was = drag.active;
+    clearTimeout(drag.timer);
+    if (was) {
+      suppressClickUntil = Date.now() + 400;
+      drag.ghost.remove(); drag.jar.classList.remove("drag-src");
+      const ids = [...$("jars").querySelectorAll(".jar[data-id]")].map((el) => el.dataset.id);
+      drag = null;
+      await saveOrder(ids);
+      render();
+    } else drag = null;
+  }
+  const jarsEl = $("jars");
+  jarsEl.addEventListener("touchstart", (e) => { const t = e.touches[0]; pressStart(t.clientX, t.clientY, e.target); }, { passive: true });
+  document.addEventListener("touchmove", (e) => { if (drag) { const t = e.touches[0]; pressMove(t.clientX, t.clientY, e); } }, { passive: false });
+  document.addEventListener("touchend", pressEnd); document.addEventListener("touchcancel", () => { if (drag && !drag.active) cancelDrag(); else pressEnd(); });
+  jarsEl.addEventListener("mousedown", (e) => { if (e.button === 0) pressStart(e.clientX, e.clientY, e.target); });
+  document.addEventListener("mousemove", (e) => { if (drag) pressMove(e.clientX, e.clientY, e); });
+  document.addEventListener("mouseup", pressEnd);
+  jarsEl.addEventListener("contextmenu", (e) => { if (e.target.closest(".jar")) e.preventDefault(); });
+
+  /* ---------- toasts ---------- */
   let toastTimer;
   function toast(msg) {
     const el = $("toast"); el.textContent = msg; el.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 2600);
   }
-  function toastUndo(msg, onUndo) {
-    const el = $("toast"); el.innerHTML = `${esc(msg)} · <button class="link-btn" style="color:var(--bg);text-decoration:underline;padding:0" id="undoBtn">Undo</button>`; el.hidden = false;
-    $("undoBtn").onclick = () => { el.hidden = true; onUndo(); };
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 5000);
+
+  /* ---------- first-run tour ---------- */
+  let tourStep = 0, tourSteps = [], tourActive = false;
+  function startTour() {
+    tourSteps = [
+      { sel: ".jarbox", title: "Your box of jars 📦", text: "Every jar you make sits in this box. The label shows what's left this month across all of them." },
+      state.buckets.length
+        ? { sel: ".jar[data-id]", title: "Your jars 🫙", text: "Each jar has a monthly limit and drains as you spend. Tap one for details. Hold and drag to move it." }
+        : { sel: ".jar.add", title: "Make your first jar 🫙", text: "Start here: create a jar like Groceries and give it a monthly limit." },
+      { sel: "#fab", title: "Log a spend ✍️", text: "Tap here whenever you spend. Tip: type 12+10 and we'll add it up for you." },
+      { sel: "#clipTab", title: "Your expenses 📎", text: "Tug the paper clip to see everything you've spent this month." },
+      { sel: "#settingsBtn", title: "Make it yours ⚙️", text: "Themes, currency, sounds, reminders and feature requests live here." },
+    ];
+    tourStep = 0; tourActive = true; lsSet("lj-tour-done", "1"); lsSet("lj-seen-version", APP_VERSION);
+    showTourStep();
+  }
+  function showTourStep() {
+    const step = tourSteps[tourStep];
+    if (!step) return endTour();
+    const el = document.querySelector(step.sel);
+    if (!el || el.hidden) { tourStep++; return showTourStep(); }
+    if (getComputedStyle(el).position !== "fixed") el.scrollIntoView({ block: "center" });
+    requestAnimationFrame(() => setTimeout(() => {
+      if (!tourActive) return;
+      const r = el.getBoundingClientRect(), p = 8;
+      const below = innerHeight - r.bottom > 230 || r.top < 230;
+      const bw = Math.min(320, innerWidth - 32), cx = r.left + r.width / 2;
+      const left = Math.max(16, Math.min(innerWidth - bw - 16, cx - bw / 2));
+      const last = tourStep === tourSteps.length - 1;
+      $("tourRoot").innerHTML = `<div class="tour" role="dialog" aria-modal="true" aria-label="Quick tour">
+        <div class="tour-spot" style="left:${r.left - p}px;top:${r.top - p}px;width:${r.width + p * 2}px;height:${r.height + p * 2}px"></div>
+        <div class="tour-arrow ${below ? "up" : "down"}" style="left:${cx}px;top:${below ? r.bottom + p + 6 : r.top - p - 50}px"><svg viewBox="0 0 24 24" width="44" height="44"><path d="M12 22 L3 11 H9 V2 H15 V11 H21 Z" fill="currentColor" stroke="#7A5A00" stroke-width="1"/></svg></div>
+        <div class="tour-bubble" style="left:${left}px;${below ? `top:${r.bottom + p + 58}px` : `bottom:${innerHeight - r.top + p + 58}px`}">
+          <b>${step.title}</b><p>${step.text}</p>
+          <div class="actions"><span class="tour-step">${tourStep + 1} of ${tourSteps.length}</span>${last ? "" : `<button class="btn" data-tour="skip">Skip</button>`}<button class="btn primary" data-tour="next" style="flex:none">${last ? "Got it!" : "Next"}</button></div>
+        </div></div>`;
+      const nb = document.querySelector('[data-tour="next"]'); if (nb) nb.focus();
+    }, 260));
+  }
+  function endTour() { tourActive = false; $("tourRoot").innerHTML = ""; window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); afterOnboarding("tour"); }
+  $("tourRoot").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tour]"); if (!b) return;
+    if (b.dataset.tour === "skip") return endTour();
+    tourStep++; showTourStep();
+  });
+  window.addEventListener("resize", () => { if (tourActive) showTourStep(); });
+
+  /* ---------- onboarding flow: intro → tour (new) or what's new (update) → reminder offer ---------- */
+  function afterOnboarding(from) {
+    if (LN() && !lsGet("lj-reminder-asked") && from !== "remindAsk" && !sheet && !tourActive) {
+      setTimeout(() => { if (!sheet && !tourActive) openSheet({ kind: "remindAsk" }); }, 350);
+    }
+  }
+  async function runOnboarding() {
+    await dataReady;
+    if (sheet || tourActive) return;
+    const isNew = !lsGet("lj-tour-done") && !state.buckets.length && !state.spends.length;
+    if (isNew) return startTour();
+    if (lsGet("lj-seen-version") !== APP_VERSION) { lsSet("lj-seen-version", APP_VERSION); lsSet("lj-tour-done", "1"); return openSheet({ kind: "whatsnew" }); }
+    afterOnboarding("start");
+  }
+  function playIntro() {
+    const el = $("intro");
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => { if (done) return; done = true; el.classList.add("out"); setTimeout(() => { el.remove(); resolve(); }, 350); };
+      el.addEventListener("click", finish);
+      setTimeout(finish, reduceMotion ? 500 : 1900);
+    });
   }
 
   /* ---------- boot ---------- */
-  const savePrefs = () => {}; // Android keeps preferences on the device only.
-  const currentTheme = () => document.documentElement.dataset.theme || "auto";
-  function applyTheme(id) {
-    if (id === "auto") delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = id;
-    try { localStorage.setItem("budget-jars-theme", id); } catch {}
-    syncThemeExtras();
-    savePrefs();
-  }
-  function syncThemeExtras() {
-    $("themeColor").setAttribute("content", getComputedStyle(document.body).backgroundColor);
-    const snow = $("snow"), on = currentTheme() === "holiday";
-    snow.hidden = !on;
-    if (on && !snow.childElementCount) {
-      snow.innerHTML = Array.from({ length: 36 }, () => {
-        const size = 3 + Math.random() * 5, dur = 9 + Math.random() * 10;
-        return `<i style="left:${(Math.random() * 100).toFixed(1)}%;width:${size.toFixed(1)}px;height:${size.toFixed(1)}px;--drift:${(Math.random() * 60 - 30).toFixed(0)}px;animation-duration:${dur.toFixed(1)}s;animation-delay:-${(Math.random() * dur).toFixed(1)}s"></i>`;
-      }).join("");
-    }
-  }
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", syncThemeExtras);
-
-  function boot() {
-    // On the web (iPhone home-screen app), cache the app so it opens offline. The Android app doesn't need this.
-    if ("serviceWorker" in navigator && location.protocol === "https:" && !window.Capacitor) {
+  async function boot() {
+    loadLocalPrefs();
+    setTheme(prefs.theme);
+    if ("serviceWorker" in navigator && location.protocol === "https:" && !IS_NATIVE && document.querySelector('link[rel="manifest"]')) {
       navigator.serviceWorker.register("sw.js").catch(() => {});
     }
-    syncThemeExtras();
-    store = localStore();
+    if (!IS_NATIVE && !document.querySelector('link[rel="manifest"]')) { const f = $("foot"); if (f) f.hidden = true; }
     render();
-    store.subscribe("buckets", (docs) => { state.buckets = docs; state.loaded.buckets = true; render(); });
-    store.subscribe("spends", (docs) => { state.spends = docs; state.loaded.spends = true; render(); });
+    const introDone = playIntro();
+    let db = null;
+    if (IN_CLAUDE) { try { db = await window.claude.use("db"); } catch {} }
+    if (db) store = dbStore(db);
+    else {
+      store = localStore();
+      if (IN_CLAUDE) { const n = $("notice"); n.hidden = false; n.textContent = "Saving on this device only. Open this page signed in to claude.ai to keep your budget synced."; }
+    }
+    if (IN_CLAUDE && db) {
+      try { const user = await window.claude.use("user"); if (user && user.can && (await user.can("data.write")) === false) state.readOnly = true; } catch {}
+    }
+    const markLoaded = () => { if (state.loaded.buckets && state.loaded.spends) dataReadyResolve(); };
+    store.subscribe("buckets", (docs) => { state.buckets = docs; state.loaded.buckets = true; render(); markLoaded(); });
+    store.subscribe("spends", (docs) => { state.spends = docs; state.loaded.spends = true; render(); markLoaded(); });
+    if (store.watchPrefs) store.watchPrefs((p) => {
+      if (p.theme && p.theme !== currentTheme()) { setTheme(p.theme); lsSet("budget-jars-theme", p.theme); }
+      if (p.currency && p.currency !== currency.code) { setCurrencyCode(p.currency); prefs.currency = currency.code; lsSet("budget-jars-currency", currency.code); }
+      if (typeof p.sound === "boolean") { prefs.sound = p.sound; lsSet("lj-sound", p.sound ? "on" : "off"); }
+      render(); if (sheet && sheet.kind === "settings") renderSheet();
+    });
+    await introDone;
+    await runOnboarding();
+    dataReady.then(() => scheduleReminders(false));
   }
   boot();
 })();
