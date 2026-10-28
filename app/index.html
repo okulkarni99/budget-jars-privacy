@@ -521,7 +521,20 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
   const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const IN_CLAUDE = !!(window.claude && window.claude.use);
-  const LN = () => (IS_NATIVE && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) || null;
+  // Reminders use Capacitor's LocalNotifications plugin. This page has no bundler (so no registerPlugin),
+  // so when needed we call the plugin through the native bridge directly.
+  let lnPlugin;
+  const LN = () => {
+    if (lnPlugin !== undefined) return lnPlugin;
+    const C = window.Capacitor;
+    lnPlugin = null;
+    if (!IS_NATIVE || !C) return lnPlugin;
+    if (C.Plugins && C.Plugins.LocalNotifications) lnPlugin = C.Plugins.LocalNotifications;
+    else if (C.registerPlugin) lnPlugin = C.registerPlugin("LocalNotifications");
+    else if (C.nativePromise && (C.PluginHeaders || []).some((h) => h.name === "LocalNotifications"))
+      lnPlugin = new Proxy({}, { get: (_, method) => (opts) => C.nativePromise("LocalNotifications", String(method), opts || {}) });
+    return lnPlugin;
+  };
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ---------- currency + amounts ---------- */
@@ -726,6 +739,17 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       }
       if (list.length) await ln.schedule({ notifications: list });
     } catch { /* reminders are best-effort */ }
+  }
+
+  async function testNudge() {
+    const ln = LN(); if (!ln) return;
+    try {
+      let perm = await ln.checkPermissions();
+      if (perm.display !== "granted") perm = await ln.requestPermissions();
+      if (perm.display !== "granted") return toast("Notifications are off for Little Jars. Turn them on in your phone's settings.");
+      await ln.schedule({ notifications: [{ id: 999, title: "Little Jars 🫙", body: "This is a test nudge. If you can read this, reminders work! 🎉", schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }, isExactNotification: false, smallIcon: "ic_stat_jar", iconColor: "#2F5BEA" }] });
+      toast("Test nudge on its way. Lock your phone and wait about 10 seconds.");
+    } catch { toast("Couldn't schedule the test nudge."); }
   }
 
   /* ---------- derived ---------- */
@@ -1034,7 +1058,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         </label>
         <div class="set-row"><span>🔔 Cha-ching sound<small>Plays when you add a spend</small></span><span class="switch"><input type="checkbox" id="soundToggle" aria-label="Cha-ching sound" ${prefs.sound ? "checked" : ""}><i></i></span></div>
         ${ln ? `<div class="set-row"><span>🌙 Daily reminder<small>A gentle nudge to log your spends</small></span><span class="switch"><input type="checkbox" id="remToggle" aria-label="Daily reminder" ${prefs.reminder.on ? "checked" : ""}><i></i></span></div>
-        ${prefs.reminder.on ? `<div class="set-row"><span>Remind me at</span><input type="time" id="remTime" value="${esc(prefs.reminder.time)}"></div>` : ""}` : ""}
+        ${prefs.reminder.on ? `<div class="set-row"><span>Remind me at</span><input type="time" id="remTime" value="${esc(prefs.reminder.time)}"></div>
+        <button class="btn" data-test-nudge style="text-align:left">🔔 Send a test nudge in 10 seconds</button>` : ""}` : ""}
         <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
         <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button></div>
         <div class="version">Little Jars ${APP_VERSION}</div>`;
@@ -1161,6 +1186,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.dataset.move) { await moveBucket(sheet.id, Number(t.dataset.move)); return renderSheet(); }
     if (t.dataset.pickTheme) { setTheme(t.dataset.pickTheme); savePrefs(); return renderSheet(); }
     if (t.matches("[data-feature]")) return openSheet({ kind: "feature" });
+    if (t.matches("[data-test-nudge]")) return testNudge();
     if (t.matches("[data-copy-feature]")) return copyText(featureBody(), "Note copied. Paste it into an email to us.");
     if (t.matches("[data-replay-tour]")) { tourActive = true; closeSheet(); return startTour(); }
     if (t.matches("[data-whatsnew]")) return openSheet({ kind: "whatsnew" });
