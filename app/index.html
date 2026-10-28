@@ -587,20 +587,25 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   let dataReadyResolve; const dataReady = new Promise((r) => (dataReadyResolve = r));
 
   /* ---------- layers (sheet, drawer, dialog) and Android's back button ---------- */
+  // One history entry ("guard") stands in for all open layers, so Android's back button closes the top one.
+  // A back() we trigger ourselves is async; until its popstate arrives we don't push a new guard.
   const layers = [];
-  let skipPop = 0;
-  function pushLayer(name) { layers.push(name); if (IS_NATIVE) history.pushState({ layer: name }, ""); }
+  let skipPop = 0, guard = false;
+  function ensureGuard() { if (IS_NATIVE && layers.length && !guard && !skipPop) { history.pushState({ lj: 1 }, ""); guard = true; } }
+  function pushLayer(name) { layers.push(name); ensureGuard(); }
   function popLayer(name) {
     const i = layers.lastIndexOf(name); if (i < 0) return;
     layers.splice(i, 1);
-    if (IS_NATIVE) { skipPop++; history.back(); }
+    if (IS_NATIVE && !layers.length && guard) { guard = false; skipPop++; history.back(); }
   }
   window.addEventListener("popstate", () => {
-    if (skipPop) { skipPop--; return; }
+    if (skipPop) { skipPop--; ensureGuard(); return; }
+    guard = false;
     const top = layers.pop();
     if (top === "confirm") answerConfirm(false, true);
     else if (top === "drawer") closeDrawer(true);
     else if (top === "sheet") closeSheet(true);
+    ensureGuard();
   });
   function closeTop() {
     const top = layers[layers.length - 1];
@@ -716,6 +721,22 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
   /* ---------- reminders (Android app only) ---------- */
   const hasSpendToday = () => state.spends.some((s) => s.date === todayStr());
+  // Android only delivers reminders on the dot when the user allows "Alarms & reminders" (exact alarms).
+  // Without it, Android may deliver a far-off reminder hours late, so we ask, but never require it.
+  let exactOK = null;
+  async function checkExact() {
+    const ln = LN(); if (!ln) return false;
+    try { const r = await ln.checkExactNotificationSetting(); exactOK = r.exact_alarm === "granted"; } catch { exactOK = false; }
+    return exactOK;
+  }
+  async function allowExact() {
+    const ln = LN(); if (!ln) return;
+    try { await ln.changeExactNotificationSetting(); } catch {}
+    await checkExact();
+    await scheduleReminders(false);
+    toast(exactOK ? "Reminders will arrive right on time ⏰" : "Okay! Reminders may arrive a little after the set time.");
+    if (sheet && sheet.kind === "settings") renderSheet();
+  }
   async function scheduleReminders(askPermission) {
     const ln = LN(); if (!ln) return;
     try {
@@ -728,6 +749,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         if (askPermission) { prefs.reminder.on = false; savePrefs(); toast("Notifications are off for Little Jars. Turn them on in your phone's settings."); if (sheet && sheet.kind === "settings") renderSheet(); }
         return;
       }
+      const exact = await checkExact();
       const [h, m] = prefs.reminder.time.split(":").map(Number);
       const now = new Date(), list = [];
       const offset = Math.floor(Math.random() * REMINDERS.length);
@@ -735,7 +757,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, h, m, 0);
         if (at <= now) continue;
         if (i === 0 && hasSpendToday()) continue; // already logged today: no nudge
-        list.push({ id: 1000 + i, title: "Little Jars 🫙", body: REMINDERS[(offset + i) % REMINDERS.length], schedule: { at, allowWhileIdle: true }, isExactNotification: false, smallIcon: "ic_stat_jar", iconColor: "#2F5BEA" });
+        list.push({ id: 1000 + i, title: "Little Jars 🫙", body: REMINDERS[(offset + i) % REMINDERS.length], schedule: { at, allowWhileIdle: true }, isExactNotification: exact, smallIcon: "ic_stat_jar", iconColor: "#2F5BEA" });
       }
       if (list.length) await ln.schedule({ notifications: list });
     } catch { /* reminders are best-effort */ }
@@ -747,7 +769,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       let perm = await ln.checkPermissions();
       if (perm.display !== "granted") perm = await ln.requestPermissions();
       if (perm.display !== "granted") return toast("Notifications are off for Little Jars. Turn them on in your phone's settings.");
-      await ln.schedule({ notifications: [{ id: 999, title: "Little Jars 🫙", body: "This is a test nudge. If you can read this, reminders work! 🎉", schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }, isExactNotification: false, smallIcon: "ic_stat_jar", iconColor: "#2F5BEA" }] });
+      await ln.schedule({ notifications: [{ id: 999, title: "Little Jars 🫙", body: "This is a test nudge. If you can read this, reminders work! 🎉", schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }, isExactNotification: await checkExact(), smallIcon: "ic_stat_jar", iconColor: "#2F5BEA" }] });
       toast("Test nudge on its way. Lock your phone and wait about 10 seconds.");
     } catch { toast("Couldn't schedule the test nudge."); }
   }
@@ -1059,6 +1081,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         <div class="set-row"><span>🔔 Cha-ching sound<small>Plays when you add a spend</small></span><span class="switch"><input type="checkbox" id="soundToggle" aria-label="Cha-ching sound" ${prefs.sound ? "checked" : ""}><i></i></span></div>
         ${ln ? `<div class="set-row"><span>🌙 Daily reminder<small>A gentle nudge to log your spends</small></span><span class="switch"><input type="checkbox" id="remToggle" aria-label="Daily reminder" ${prefs.reminder.on ? "checked" : ""}><i></i></span></div>
         ${prefs.reminder.on ? `<div class="set-row"><span>Remind me at</span><input type="time" id="remTime" value="${esc(prefs.reminder.time)}"></div>
+        <div class="set-row"><span>⏰ Exact timing<small>${exactOK ? "On: reminders arrive right on time" : "Off: Android may deliver reminders late"}</small></span>${exactOK ? "<span>✅</span>" : `<button class="btn primary" data-allow-exact style="flex:none;padding:8px 14px">Allow</button>`}</div>
         <button class="btn" data-test-nudge style="text-align:left">🔔 Send a test nudge in 10 seconds</button>` : ""}` : ""}
         <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
         <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button></div>
@@ -1093,6 +1116,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       html = `<div class="sheet-head"><h3>🌙 Want a gentle nudge?</h3><button class="x" data-close aria-label="Close">×</button></div>
         <p style="margin:0">We can send one friendly reminder at <b>9 PM</b> to log your spends. No nagging, promise. You can change the time or turn it off in Settings.</p>
         <div class="actions"><button class="btn" data-remind-no>Not now</button><button class="btn primary" data-remind-yes>Yes please</button></div>`;
+    } else if (sheet.kind === "exactAsk") {
+      html = `<div class="sheet-head"><h3>⏰ One more tiny thing</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <p style="margin:0">To get your nudge <b>right at ${esc(fmtTime(prefs.reminder.time))}</b>, Android needs the <b>Alarms &amp; reminders</b> permission. On the next screen, switch it on for Little Jars, then come back.</p>
+        <p class="row-meta" style="margin:0">Skip it and reminders still work, they just might show up a bit late.</p>
+        <div class="actions"><button class="btn" data-close>Skip</button><button class="btn primary" data-exact-yes>Allow exact timing</button></div>`;
     } else if (sheet.kind === "detail") {
       const b = state.buckets.find((x) => x.id === sheet.id);
       if (!b) { closeSheet(); return; }
@@ -1172,7 +1200,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.id === "nextMonth") { state.month = shiftMonth(state.month, 1); return render(); }
     if (t.id === "fab") return openAddSpend();
     if (t.id === "clipTab") return openDrawer();
-    if (t.id === "settingsBtn") return openSheet({ kind: "settings" });
+    if (t.id === "settingsBtn") { openSheet({ kind: "settings" }); if (LN()) checkExact().then(() => { if (sheet && sheet.kind === "settings") renderSheet(); }); return; }
     if (t.id === "newBucketTop" || t.matches("[data-new-bucket]")) return openBucket();
     if (t.dataset.dfilter) { drawer.filter = t.dataset.dfilter; return renderDrawer(); }
     if (t.dataset.open) return openSheet({ kind: "detail", id: t.dataset.open });
@@ -1187,10 +1215,17 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.dataset.pickTheme) { setTheme(t.dataset.pickTheme); savePrefs(); return renderSheet(); }
     if (t.matches("[data-feature]")) return openSheet({ kind: "feature" });
     if (t.matches("[data-test-nudge]")) return testNudge();
+    if (t.matches("[data-allow-exact]")) return allowExact();
+    if (t.matches("[data-exact-yes]")) { closeSheet(); return allowExact(); }
     if (t.matches("[data-copy-feature]")) return copyText(featureBody(), "Note copied. Paste it into an email to us.");
     if (t.matches("[data-replay-tour]")) { tourActive = true; closeSheet(); return startTour(); }
     if (t.matches("[data-whatsnew]")) return openSheet({ kind: "whatsnew" });
-    if (t.matches("[data-remind-yes]")) { lsSet("lj-reminder-asked", "1"); prefs.reminder = { on: true, time: prefs.reminder.time || "21:00" }; savePrefs(); closeSheet(); return scheduleReminders(true); }
+    if (t.matches("[data-remind-yes]")) {
+      lsSet("lj-reminder-asked", "1"); prefs.reminder = { on: true, time: prefs.reminder.time || "21:00" }; savePrefs(); closeSheet();
+      await scheduleReminders(true);
+      if (prefs.reminder.on && !(await checkExact())) openSheet({ kind: "exactAsk" });
+      return;
+    }
     if (t.matches("[data-remind-no]")) { lsSet("lj-reminder-asked", "1"); prefs.reminder.on = false; savePrefs(); return closeSheet(); }
     if (t.matches("[data-delete-bucket]")) { sheet.confirmDelete = true; return renderSheet(); }
     if (t.matches("[data-delete-bucket-no]")) { sheet.confirmDelete = false; return renderSheet(); }
