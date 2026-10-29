@@ -432,6 +432,33 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 @keyframes spark { 0% { transform: translate3d(0, 0, 0); opacity: 0; } 15% { opacity: .9; } 50% { opacity: .35; } 70% { opacity: .9; } 100% { transform: translate3d(var(--drift, 20px), -105vh, 0); opacity: 0; } }
 #snow i.leaf { background: none; border-radius: 0; opacity: .55; line-height: 1; animation-name: leaf; }
 @keyframes leaf { to { transform: translate3d(var(--drift, 20px), 105vh, 0) rotate(540deg); } }
+/* Diwali fireworks: each burst is a ring of sparks flying out from a point, then it moves somewhere new. */
+#snow .fw { position: absolute; width: 0; height: 0; }
+#snow .fw i { position: absolute; left: -2px; top: -9px; width: 4px; height: 18px; border-radius: 3px; background: linear-gradient(var(--fc), #FFFFFF); box-shadow: 0 0 8px 2px var(--fc);
+  opacity: 0; animation: fwSpark var(--dur, 4s) cubic-bezier(.15, .7, .3, 1) infinite; animation-delay: var(--delay, 0s); }
+#snow .fw b { position: absolute; left: -26px; top: -26px; width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(circle, #FFFFFF, var(--fc) 40%, transparent 70%);
+  opacity: 0; animation: fwFlash var(--dur, 4s) ease-out infinite; animation-delay: var(--delay, 0s); }
+@keyframes fwSpark {
+  0% { transform: rotate(var(--a)) translateY(0) scaleY(.3); opacity: 0; }
+  3% { opacity: 1; }
+  32% { transform: rotate(var(--a)) translateY(calc(var(--r) * -1)) scaleY(1); opacity: .95; }
+  50% { transform: rotate(var(--a)) translateY(calc(var(--r) * -1.15 + 18px)) scaleY(.6); opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes fwFlash { 0% { transform: scale(.2); opacity: 0; } 3% { opacity: .9; } 14% { transform: scale(1.6); opacity: 0; } 100% { opacity: 0; } }
+/* Bottom-of-screen decorations: a row of diyas for Diwali, a harvest table for Thanksgiving. */
+#snow .ground { position: absolute; left: 0; right: 0; bottom: max(6px, env(safe-area-inset-bottom, 0px)); text-align: center; white-space: nowrap; overflow: hidden; line-height: 1; opacity: .5; }
+#snow .ground span { display: inline-block; margin: 0 6px; animation: flicker 2.2s ease-in-out infinite alternate; }
+#snow .ground span:nth-child(3n) { animation-delay: -.7s; } #snow .ground span:nth-child(3n+1) { animation-delay: -1.4s; }
+@keyframes flicker { to { transform: translateY(-2px) scale(1.06); filter: brightness(1.25); } }
+:root[data-skin="thanksgiving"] #snow .ground span { animation: none; }
+#snow .garland { position: absolute; top: 0; left: 0; right: 0; height: 40px; white-space: nowrap; overflow: hidden; text-align: center; opacity: .5; line-height: 1; }
+#snow .garland::before { content: ""; position: absolute; left: -5%; right: -5%; top: -40px; height: 60px; border-bottom: 2px solid #A0703A; border-radius: 0 0 50% 50%; opacity: .5; }
+#snow .garland span { display: inline-block; margin: 0 5px; transform-origin: 50% 0; animation: sway 3s ease-in-out infinite alternate; }
+#snow .garland span:nth-child(odd) { animation-delay: -1.5s; }
+@keyframes sway { from { transform: translateY(var(--y, 6px)) rotate(-12deg); } to { transform: translateY(var(--y, 6px)) rotate(12deg); } }
+:root[data-skin="diwali"] body { background: radial-gradient(ellipse at 50% 0%, #3A1E6E 0%, transparent 60%), radial-gradient(ellipse at 50% 100%, #4A2160 0%, transparent 55%), var(--bg); background-attachment: fixed; }
+:root[data-skin="thanksgiving"] body { background: radial-gradient(circle at 10% 5%, #FFE2BF 0%, transparent 45%), radial-gradient(circle at 95% 40%, #FFE9D2 0%, transparent 40%), radial-gradient(ellipse at 50% 100%, #F9DCC0 0%, transparent 50%), var(--bg); background-attachment: fixed; }
 
 /* v1.2: badges line, editable rows, recurring, wrap, stickers */
 .badges { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
@@ -826,15 +853,44 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     snow.hidden = !kind;
     if (kind && snow.dataset.kind !== kind) {
       snow.dataset.kind = kind;
-      const n = kind === "leaf" ? 14 : kind === "spark" ? 30 : 36;
+      const n = kind === "leaf" ? 20 : kind === "spark" ? 24 : 36;
+      const falling = ["🍂", "🍁", "🍂", "🍁", "🌰", "🍃"];
       snow.innerHTML = Array.from({ length: n }, () => {
         const size = kind === "leaf" ? 14 + Math.random() * 10 : kind === "spark" ? 2 + Math.random() * 3 : 3 + Math.random() * 5;
         const dur = kind === "spark" ? 8 + Math.random() * 8 : kind === "leaf" ? 11 + Math.random() * 9 : 9 + Math.random() * 10;
-        const leaf = kind === "leaf" ? (Math.random() < .5 ? "🍂" : "🍁") : "";
+        const leaf = kind === "leaf" ? falling[Math.floor(Math.random() * falling.length)] : "";
         const box = kind === "leaf" ? `font-size:${size.toFixed(0)}px` : `width:${size.toFixed(1)}px;height:${size.toFixed(1)}px`;
         return `<i class="${kind === "snow" ? "" : kind}" style="left:${(Math.random() * 100).toFixed(1)}%;${box};--drift:${(Math.random() * 60 - 30).toFixed(0)}px;animation-duration:${dur.toFixed(1)}s;animation-delay:-${(Math.random() * dur).toFixed(1)}s">${leaf}</i>`;
-      }).join("");
+      }).join("") + themeDecor(kind);
+      snow.querySelectorAll(".fw").forEach((fw) => {
+        placeBurst(fw);
+        // After each pop, move the burst to a new spot and color.
+        fw.querySelector("b").addEventListener("animationiteration", () => placeBurst(fw));
+      });
     }
+  }
+  const FW_COLORS = ["#FFD166", "#FF9F1C", "#F15BB5", "#00BBF9", "#7CFFB2", "#FF6F59", "#C9A7FF"];
+  function placeBurst(fw) {
+    fw.style.left = (8 + Math.random() * 84).toFixed(1) + "%";
+    fw.style.top = (6 + Math.random() * 50).toFixed(1) + "%";
+    fw.style.setProperty("--fc", FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)]);
+    fw.style.setProperty("--r", (70 + Math.random() * 60).toFixed(0) + "px");
+  }
+  function themeDecor(kind) {
+    if (kind === "spark") {
+      const bursts = Array.from({ length: 6 }, (_, k) => {
+        const dur = (2.8 + Math.random() * 2).toFixed(2), delay = (-k * .8 - Math.random()).toFixed(2), rays = 18;
+        return `<div class="fw" style="--dur:${dur}s;--delay:${delay}s"><b></b>${Array.from({ length: rays }, (_, j) => `<i style="--a:${(j * 360 / rays).toFixed(0)}deg"></i>`).join("")}</div>`;
+      }).join("");
+      const diyas = Array.from({ length: 9 }, (_, j) => `<span>${j % 2 ? "✨" : "🪔"}</span>`).join("");
+      return bursts + `<div class="ground" style="font-size:26px">${diyas}</div>`;
+    }
+    if (kind === "leaf") {
+      const harvest = ["🌾", "🎃", "🌽", "🍎", "🥧", "🌰", "🍐", "🎃", "🌾", "🍂", "🌽", "🎃"].map((e) => `<span>${e}</span>`).join("");
+      const garland = Array.from({ length: 16 }, (_, j) => `<span style="--y:${(4 + Math.abs(7.5 - j) * -.6 + 8).toFixed(1)}px">${["🍁", "🍂", "🍃"][j % 3]}</span>`).join("");
+      return `<div class="garland" style="font-size:20px">${garland}</div><div class="ground" style="font-size:28px">${harvest}</div>`;
+    }
+    return "";
   }
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", syncThemeExtras);
 
