@@ -348,17 +348,18 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 .detail-list { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .detail-list .row { padding: 10px 12px; }
 .confirm { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; }
-.themes { display: grid; gap: 10px; }
-.theme-opt {
-  display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
-  border: 2px solid var(--line); background: var(--surface); border-radius: 16px; padding: 12px 14px;
-}
-.theme-opt[aria-pressed="true"] { border-color: var(--accent); }
-.theme-opt b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
-.theme-opt span { color: var(--muted); font-size: .88rem; }
-.swatch { display: flex; flex: none; }
-.swatch i { width: 26px; height: 26px; border-radius: 999px; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
-.swatch i + i { margin-left: -8px; }
+/* Theme picker: little tiles in each theme's own colors. */
+.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.theme-opt { position: relative; display: grid; justify-items: center; gap: 6px; padding: 6px 4px 8px; border: 2px solid transparent; background: none; border-radius: 18px; transition: transform .15s ease; }
+.theme-opt:active { transform: scale(.95); }
+.theme-opt b { font-family: var(--font-display); font-weight: 600; font-size: .86rem; line-height: 1.1; }
+.theme-chip { position: relative; width: 100%; aspect-ratio: 1.35; border-radius: 14px; background: var(--t0); box-shadow: inset 0 0 0 1px rgba(128,128,128,.25); display: grid; place-items: center; overflow: hidden; }
+.theme-chip span { font-size: 1.7rem; line-height: 1; position: relative; z-index: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+.theme-chip i { position: absolute; border-radius: 50%; }
+.theme-chip i:nth-of-type(1) { width: 46%; aspect-ratio: 1; background: var(--t1); left: -10%; bottom: -18%; }
+.theme-chip i:nth-of-type(2) { width: 30%; aspect-ratio: 1; background: var(--t2); right: -6%; top: -10%; }
+.theme-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.theme-opt[aria-pressed="true"]::after { content: "✓"; position: absolute; top: 0; right: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: .72rem; font-weight: 800; display: grid; place-items: center; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--bg); border-radius: 14px; font-weight: 600; }
 .set-row small { display: block; color: var(--muted); font-weight: 500; font-size: .82rem; }
 .set-row input[type="time"] { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
@@ -570,12 +571,12 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   const FILLS = [["liquid","Liquid","💧"],["candy","Candy","🍬"],["kisses","Chocolate kisses","🍫"],["cash","Cash","💵"],["coins","Coins","🪙"]];
   const COLORS = 8;
   const THEMES = [
-    { id: "auto", name: "Auto", desc: "Follows your phone's light or dark mode", sw: ["#EEF3F1", "#2F5BEA", "#0E1412"] },
-    { id: "sunny", name: "Sunny", desc: "Bright white with candy colors", sw: ["#FFFFFF", "#FF4F8B", "#FFC400"] },
-    { id: "midnight", name: "Midnight", desc: "True black, easy on the eyes at night", sw: ["#000000", "#A78BFA", "#34D399"] },
-    { id: "holiday", name: "Holiday", desc: "Evergreen, cranberry and gold, with snow", sw: ["#0F2A1F", "#E23B4E", "#F2C14E"] },
-    { id: "diwali", name: "Diwali", desc: "Deep indigo and marigold, with sparkles", sw: ["#1B1036", "#FF9F1C", "#F15BB5"] },
-    { id: "thanksgiving", name: "Thanksgiving", desc: "Warm cream and pumpkin, with falling leaves", sw: ["#FFF6EC", "#C8551F", "#7A8B3A"] },
+    { id: "auto", e: "🌓", name: "Auto", desc: "Follows your phone's light or dark mode", sw: ["#EEF3F1", "#2F5BEA", "#0E1412"] },
+    { id: "sunny", e: "☀️", name: "Sunny", desc: "Bright white with candy colors", sw: ["#FFFFFF", "#FF4F8B", "#FFC400"] },
+    { id: "midnight", e: "🌙", name: "Midnight", desc: "True black, easy on the eyes at night", sw: ["#000000", "#A78BFA", "#34D399"] },
+    { id: "holiday", e: "🎄", name: "Holiday", desc: "Evergreen, cranberry and gold, with snow", sw: ["#0F2A1F", "#E23B4E", "#F2C14E"] },
+    { id: "diwali", e: "🪔", name: "Diwali", desc: "Deep indigo and marigold, with sparkles", sw: ["#1B1036", "#FF9F1C", "#F15BB5"] },
+    { id: "thanksgiving", e: "🦃", name: "Thanksgiving", desc: "Warm cream and pumpkin, with falling leaves", sw: ["#FFF6EC", "#C8551F", "#7A8B3A"] },
   ];
   // Festive mode switches themes by date, with no internet: Diwali dates come from this table
   // (Lakshmi Puja, per Drik Panchang), Thanksgiving and the holidays are calculated.
@@ -1406,9 +1407,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       let saved = {}; try { saved = JSON.parse(lsGet("lj-stickers") || "{}") || {}; } catch {}
       html = `<div class="sheet-head"><h3>Settings</h3><button class="x" data-close aria-label="Close">×</button></div>
         <div class="f">Theme
-          <div class="themes">${THEMES.map((th) => `<button class="theme-opt" data-pick-theme="${th.id}" aria-pressed="${prefs.theme === th.id}">
-            <span class="swatch" aria-hidden="true">${th.sw.map((c) => `<i style="background:${c}"></i>`).join("")}</span>
-            <span><b>${th.name}</b><span>${th.desc}</span></span>
+          <div class="themes">${THEMES.map((th) => `<button class="theme-opt" data-pick-theme="${th.id}" aria-pressed="${prefs.theme === th.id}" aria-label="${th.name}: ${th.desc}" title="${th.desc}" style="--t0:${th.sw[0]};--t1:${th.sw[1]};--t2:${th.sw[2]}">
+            <span class="theme-chip" aria-hidden="true"><span>${th.e}</span><i></i><i></i></span><b>${th.name}</b>
           </button>`).join("")}</div>
         </div>
         <div class="set-row"><span>🎉 Festive mode<small>${fa ? `Showing the ${esc(THEMES.find((t) => t.id === fa.skin).name)} theme for ${esc(fa.name)}, until ${fa.until.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : f ? `Taking a break for ${esc(f.name)} since you picked a theme` : "Dresses up for Diwali, Thanksgiving and the holidays, then switches back"}</small></span><span class="switch"><input type="checkbox" id="festiveToggle" aria-label="Festive mode" ${prefs.festive ? "checked" : ""}><i></i></span></div>
