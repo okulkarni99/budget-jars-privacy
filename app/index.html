@@ -1337,6 +1337,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     sheet = s;
     if (fresh) pushLayer("sheet");
     renderSheet(true);
+    // Add spend: jump straight to the amount with the number pad up. Phones only open the keyboard
+    // when focus happens during the tap itself, so this can't wait for a timer.
+    if (s.kind === "spend" && !s.editId) { const a = $("spAmount"); if (a) { a.focus({ preventScroll: true }); return; } }
     setTimeout(() => { const f = document.querySelector("#sheetRoot [autofocus]"); if (f && window.matchMedia("(pointer:fine)").matches) f.focus(); }, 30);
   }
   function closeSheet(fromPop) {
