@@ -6,7 +6,8 @@
 <meta name="theme-color" id="themeColor" content="#EEF3F1">
 <script>
   // Apply the saved theme before first paint so the page never flashes the wrong colors.
-  try { var t = localStorage.getItem("budget-jars-theme"); if (t && t !== "auto") document.documentElement.dataset.skin = t; } catch (e) {}
+  // "lj-skin" is the theme actually showing (festive mode can swap in Diwali, Thanksgiving or Holiday).
+  try { var t = localStorage.getItem("lj-skin") || localStorage.getItem("budget-jars-theme"); if (t && t !== "auto") document.documentElement.dataset.skin = t; } catch (e) {}
 </script>
 <meta name="description" content="Little Jars: budgeting made simple, with spending jars.">
 <title>Little Jars</title>
@@ -93,6 +94,22 @@ img { max-width: 100%; }
   --j4: #B48CFF; --j5: #E9E4D4; --j6: #FF9F6B; --j7: #E23B4E;
   color-scheme: dark;
 }
+:root[data-skin="diwali"] {
+  --bg: #1B1036; --surface: #2A1A4F; --ink: #FFF4DE; --muted: #CDBDE6; --line: #3D2A6B;
+  --accent: #FF9F1C; --accent-ink: #1B1036; --danger: #FF6B81; --good: #7EE2A8;
+  --scrim: rgba(10, 5, 25, .65); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3);
+  --j0: #FFB627; --j1: #FF6F59; --j2: #F15BB5; --j3: #00BBF9;
+  --j4: #B794F6; --j5: #FFD166; --j6: #2EC4B6; --j7: #EF476F;
+  color-scheme: dark;
+}
+:root[data-skin="thanksgiving"] {
+  --bg: #FFF6EC; --surface: #FFFFFF; --ink: #3B2414; --muted: #8A6A55; --line: #F0DCC8;
+  --accent: #C8551F; --accent-ink: #FFFFFF; --danger: #C62828; --good: #2E7D32;
+  --scrim: rgba(59, 36, 20, .4); --shadow: 0 2px 4px rgba(140, 90, 43, .08), 0 10px 28px rgba(140, 90, 43, .12);
+  --j0: #D9822B; --j1: #B5452B; --j2: #E0A526; --j3: #7A8B3A;
+  --j4: #8C5A2B; --j5: #C9A227; --j6: #4F7C6B; --j7: #A0303A;
+  color-scheme: light;
+}
 
 * { box-sizing: border-box; }
 body {
@@ -118,6 +135,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .brand { font-size: 1.5rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
 .brand-mark { width: 32px; height: 32px; border-radius: 9px; display: block; }
 :root[data-skin="holiday"] .brand::after { content: "🎄"; font-size: 1.2rem; }
+:root[data-skin="diwali"] .brand::after { content: "🪔"; font-size: 1.2rem; }
+:root[data-skin="thanksgiving"] .brand::after { content: "🦃"; font-size: 1.2rem; }
 .top-actions { display: flex; align-items: center; gap: 8px; }
 .month { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
 .month button { border: 0; background: transparent; width: 36px; height: 36px; border-radius: 999px; font-size: 1.1rem; }
@@ -141,7 +160,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .jarbox .b-wall { fill: var(--box-wall); }
 .jarbox .b-inside { fill: var(--box-inside); }
 .jarbox .b-ribbon { fill: #F2C14E; display: none; }
-:root[data-skin="holiday"] .jarbox .b-ribbon { display: inline; }
+:root[data-skin="diwali"] .jarbox { --box: #6A2C91; --box-wall: #4E1F6E; --box-flap: #7B3AA6; --box-inside: #2B0F40; --box-print: #FFD166; }
+:root[data-skin="holiday"] .jarbox .b-ribbon, :root[data-skin="diwali"] .jarbox .b-ribbon { display: inline; }
 .jarbox .b-print { fill: var(--box-print); font-family: var(--font-display); font-weight: 700; }
 .lid-g { cursor: pointer; }
 .lid-g .l-glass { fill: rgba(255, 255, 255, .28); stroke: rgba(255, 255, 255, .5); stroke-width: 1; }
@@ -272,7 +292,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .day-head { position: sticky; top: 0; background: var(--surface); padding: 10px 16px 4px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
 
 /* Sheets */
-.scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.scrim { position: fixed; inset: 0; z-index: 50; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 20px; }
 .sheet {
   background: var(--surface); color: var(--ink); width: 100%; max-width: 480px; max-height: 88vh; overflow: auto;
   border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 16px;
@@ -407,11 +427,50 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 #snow { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 #snow i { position: absolute; top: -12px; border-radius: 50%; background: #FFFFFF; opacity: .55; animation: snow linear infinite; }
 @keyframes snow { to { transform: translate3d(var(--drift, 20px), 105vh, 0); } }
+/* Diwali sparkles rise; Thanksgiving leaves tumble down. */
+#snow i.spark { top: auto; bottom: -12px; background: #FFD166; opacity: .8; box-shadow: 0 0 6px 2px rgba(255, 170, 40, .65); animation-name: spark; }
+@keyframes spark { 0% { transform: translate3d(0, 0, 0); opacity: 0; } 15% { opacity: .9; } 50% { opacity: .35; } 70% { opacity: .9; } 100% { transform: translate3d(var(--drift, 20px), -105vh, 0); opacity: 0; } }
+#snow i.leaf { background: none; border-radius: 0; opacity: .55; line-height: 1; animation-name: leaf; }
+@keyframes leaf { to { transform: translate3d(var(--drift, 20px), 105vh, 0) rotate(540deg); } }
+
+/* v1.2: badges line, editable rows, recurring, wrap, stickers */
+.badges { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.mini { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: .85rem; font-weight: 600; color: var(--ink); }
+.row[data-edit-spend] { cursor: pointer; }
+.row[data-edit-spend]:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.set-group { display: grid; gap: 8px; }
+.set-group .eyebrow { margin-top: 4px; }
+.btn-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.due { display: grid; gap: 10px; }
+.due-item { display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: 16px; padding: 12px; }
+.due-item .row-main b { font-family: var(--font-display); font-weight: 600; }
+.due-item .actions { flex-wrap: nowrap; }
+.due-item .btn { padding: 10px 14px; }
+.wrap-card { position: relative; overflow: hidden; border-radius: 20px; padding: 20px; display: grid; gap: 12px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), color-mix(in srgb, var(--j4) 18%, var(--surface))); }
+.wrap-card h4 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; }
+.wrap-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.wrap-stat { background: color-mix(in srgb, var(--surface) 80%, transparent); border-radius: 14px; padding: 10px 12px; }
+.wrap-stat b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.25rem; line-height: 1.2; overflow-wrap: anywhere; }
+.wrap-stat span { color: var(--muted); font-size: .8rem; font-weight: 600; }
+.wrap-stat.wide { grid-column: 1 / -1; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: -10px; width: 7px; height: 11px; border-radius: 2px; animation: confetti 2.4s ease-in forwards; }
+@keyframes confetti { to { transform: translate3d(var(--drift, 0), 420px, 0) rotate(720deg); opacity: 0; } }
+.stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.sticker { display: grid; justify-items: center; gap: 4px; text-align: center; background: var(--bg); border-radius: 16px; padding: 12px 6px; }
+.sticker span { font-size: 2rem; line-height: 1.1; }
+.sticker b { font-size: .82rem; line-height: 1.2; }
+.sticker small { color: var(--muted); font-size: .72rem; line-height: 1.25; }
+.sticker.got span { filter: drop-shadow(0 2px 3px rgba(0,0,0,.2)); animation: pop .3s ease-out; }
+.sticker:not(.got) span { filter: grayscale(1); opacity: .35; }
+.rate-faces { font-size: 2.6rem; text-align: center; letter-spacing: .1em; }
 
 @media (prefers-reduced-motion: reduce) {
   .jar-art .wave, #snow, .tour-arrow { animation: none !important; }
   .jar-art .liquid, .drawer, .jar { transition: none; }
-  .sheet.anim, .dialog { animation: none; }
+  .sheet.anim, .dialog, .confetti { animation: none; }
+  .confetti { display: none; }
   #snow { display: none; }
 }
 </style>
@@ -453,6 +512,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 <div id="confirmRoot"></div>
 <div id="tourRoot"></div>
 <div class="toast" id="toast" role="status" hidden></div>
+<input type="file" id="restoreFile" accept=".json,application/json" hidden>
 <div id="intro" aria-hidden="true">
   <div class="intro-stage">
     <svg class="intro-jar" viewBox="0 0 200 220">
@@ -474,7 +534,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
 <script>
 (() => {
-  const APP_VERSION = "1.1.0";
+  const APP_VERSION = "1.2.0";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
@@ -487,6 +547,30 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     { id: "sunny", name: "Sunny", desc: "Bright white with candy colors", sw: ["#FFFFFF", "#FF4F8B", "#FFC400"] },
     { id: "midnight", name: "Midnight", desc: "True black, easy on the eyes at night", sw: ["#000000", "#A78BFA", "#34D399"] },
     { id: "holiday", name: "Holiday", desc: "Evergreen, cranberry and gold, with snow", sw: ["#0F2A1F", "#E23B4E", "#F2C14E"] },
+    { id: "diwali", name: "Diwali", desc: "Deep indigo and marigold, with sparkles", sw: ["#1B1036", "#FF9F1C", "#F15BB5"] },
+    { id: "thanksgiving", name: "Thanksgiving", desc: "Warm cream and pumpkin, with falling leaves", sw: ["#FFF6EC", "#C8551F", "#7A8B3A"] },
+  ];
+  // Festive mode switches themes by date, with no internet: Diwali dates come from this table
+  // (Lakshmi Puja, per Drik Panchang), Thanksgiving and the holidays are calculated.
+  const DIWALI = { 2026: "11-08", 2027: "10-29", 2028: "10-17", 2029: "11-05", 2030: "10-26", 2031: "11-13", 2032: "11-02", 2033: "10-22", 2034: "11-09", 2035: "10-30" };
+  const STICKERS = [
+    ["first-jar", "🫙", "First jar", "Make your first jar"],
+    ["first-spend", "✍️", "First spend", "Log your first spend"],
+    ["ten", "🔟", "Ten spends", "Log 10 spends"],
+    ["fifty", "🌟", "50 club", "Log 50 spends"],
+    ["hundred", "💯", "Century", "Log 100 spends"],
+    ["shelf", "🗄️", "Full shelf", "Have 5 jars"],
+    ["under", "🎯", "Bullseye", "Finish a month under budget"],
+    ["saver", "🐷", "Big saver", "Finish a month with 20% left"],
+    ["hero", "🦸", "Jar hero", "Keep one jar under its limit 3 months in a row"],
+    ["rhythm4", "🎵", "In the groove", "Log something 4 weeks in a row"],
+    ["rhythm8", "🎶", "Rhythm master", "Log something 8 weeks in a row"],
+    ["rhythm12", "🥁", "Drumroll", "Log something 12 weeks in a row"],
+    ["repeat", "🔁", "On repeat", "Set up a monthly repeat"],
+    ["math", "🧮", "Mathlete", "Add up a spend with + or −"],
+    ["backup", "💾", "Backup buddy", "Back up your jars"],
+    ["wrap", "🎁", "Wrapped", "Open a Jar Wrap"],
+    ["explorer", "🎨", "Theme explorer", "Try 3 themes"],
   ];
   const CURRENCIES = [
     ["USD", "US dollar", "en-US"], ["EUR", "Euro", "en-IE"], ["GBP", "British pound", "en-GB"],
@@ -521,17 +605,20 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
   const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const IN_CLAUDE = !!(window.claude && window.claude.use);
-  // Daily reminders live in the app's own native "Reminders" plugin (Android only). This page has no
-  // bundler, so we call it through Capacitor's native bridge.
-  let rmPlugin;
-  const RM = () => {
-    if (rmPlugin !== undefined) return rmPlugin;
+  // The Android app has two native plugins of its own: "Reminders" (notifications) and "JarTools"
+  // (files, sharing, Android backup, Play review). This page has no bundler, so we call them through
+  // Capacitor's native bridge.
+  const plugins = {};
+  const nativePlugin = (name) => {
+    if (plugins[name] !== undefined) return plugins[name];
     const C = window.Capacitor;
-    rmPlugin = null;
-    if (IS_NATIVE && C && C.nativePromise && (C.PluginHeaders || []).some((h) => h.name === "Reminders"))
-      rmPlugin = new Proxy({}, { get: (_, method) => (opts) => C.nativePromise("Reminders", String(method), opts || {}) });
-    return rmPlugin;
+    plugins[name] = null;
+    if (IS_NATIVE && C && C.nativePromise && (C.PluginHeaders || []).some((h) => h.name === name))
+      plugins[name] = new Proxy({}, { get: (_, method) => (opts) => C.nativePromise(name, String(method), opts || {}) });
+    return plugins[name];
   };
+  const RM = () => nativePlugin("Reminders");
+  const JT = () => nativePlugin("JarTools");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ---------- currency + amounts ---------- */
@@ -575,9 +662,15 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   const shortDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
   const dayLabel = (s) => { if (s === todayStr()) return "Today"; const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }); };
 
+  const ordinal = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parseDay = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  // Monday of the week a date falls in, as YYYY-MM-DD.
+  const weekOf = (s) => { const d = parseDay(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); };
+
   /* ---------- state ---------- */
-  const state = { buckets: [], spends: [], loaded: { buckets: false, spends: false }, month: curMonth(), readOnly: false };
-  const prefs = { theme: "auto", currency: "USD", sound: true, reminder: { on: false, time: "21:00" } };
+  const state = { buckets: [], spends: [], recurring: [], loaded: { buckets: false, spends: false, recurring: false }, month: curMonth(), readOnly: false };
+  const prefs = { theme: "auto", currency: "USD", sound: true, festive: true, reminder: { on: false, time: "21:00" }, mid: true };
   let store = null;
   let sheet = null;
   let drawer = { open: false, filter: "all" };
@@ -621,25 +714,48 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         );
       },
       add: (col, data) => db.collection(col).add(data),
+      put: (col, id, data) => db.doc(`${col}/${id}`).set(data),
       update: (col, id, data) => db.doc(`${col}/${id}`).update(data),
       remove: (col, id) => db.doc(`${col}/${id}`).delete(),
       watchPrefs: (cb) => db.doc("settings/main").onSnapshot((s) => { if (s.exists) cb(s.data()); }, () => {}),
       savePrefs: (d) => db.doc("settings/main").set(d),
     };
   }
+  const LOCAL_KEY = "budget-jars-v1";
   function localStore() {
-    const KEY = "budget-jars-v1";
-    let data = { buckets: {}, spends: {} };
-    try { const raw = localStorage.getItem(KEY); if (raw) data = JSON.parse(raw); } catch {}
-    const subs = { buckets: [], spends: [] };
-    const emit = (col) => { lsSet(KEY, JSON.stringify(data)); subs[col].forEach((cb) => cb(Object.entries(data[col]).map(([id, v]) => ({ id, ...v })))); };
+    let data = {};
+    try { const raw = localStorage.getItem(LOCAL_KEY); if (raw) data = JSON.parse(raw) || {}; } catch {}
+    const subs = {};
+    const emit = (col) => { lsSet(LOCAL_KEY, JSON.stringify(data)); mirrorSoon(); (subs[col] || []).forEach((cb) => cb(Object.entries(data[col]).map(([id, v]) => ({ id, ...v })))); };
     const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const col = (c) => (data[c] = data[c] || {});
     return {
-      subscribe(col, cb) { subs[col].push(cb); setTimeout(() => emit(col)); },
-      async add(col, v) { data[col][id()] = v; emit(col); },
+      subscribe(c, cb) { col(c); (subs[c] = subs[c] || []).push(cb); setTimeout(() => emit(c)); },
+      async add(c, v) { col(c)[id()] = v; emit(c); },
+      async put(c, i, v) { col(c)[i] = v; emit(c); },
       async update(col, i, v) { data[col][i] = { ...data[col][i], ...v }; emit(col); },
       async remove(col, i) { delete data[col][i]; emit(col); },
     };
+  }
+  // Android app: keep a copy of everything in a plain file that Android's own backup carries to a new
+  // phone (Google's encrypted backup and phone-to-phone transfer). Nothing goes to us.
+  const localKeys = () => { const o = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^(lj-|budget-jars-)/.test(k)) o[k] = localStorage.getItem(k); } } catch {} return o; };
+  let mirrorTimer;
+  function mirrorSoon() {
+    if (!JT()) return;
+    clearTimeout(mirrorTimer);
+    mirrorTimer = setTimeout(() => { JT().mirrorSave({ data: JSON.stringify({ app: "little-jars", savedAt: Date.now(), keys: localKeys() }) }).catch(() => {}); }, 1500);
+  }
+  // On a fresh install (nothing saved yet), bring back the copy Android restored, if there is one.
+  async function restoreMirror() {
+    if (!JT() || lsGet(LOCAL_KEY)) return false;
+    try {
+      const r = await JT().mirrorLoad();
+      const m = r && r.data && JSON.parse(r.data);
+      if (!m || m.app !== "little-jars" || !m.keys || !m.keys[LOCAL_KEY]) return false;
+      Object.entries(m.keys).forEach(([k, v]) => lsSet(k, v));
+      return true;
+    } catch { return false; }
   }
   async function write(fn, okMsg) {
     try { await fn(); if (okMsg) toast(okMsg); return true; }
@@ -657,30 +773,66 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     prefs.currency = lsGet("budget-jars-currency") || "USD";
     prefs.sound = lsGet("lj-sound") !== "off";
     try { const r = JSON.parse(lsGet("lj-reminder") || "null"); if (r && typeof r.on === "boolean") prefs.reminder = { on: r.on, time: r.time || "21:00" }; } catch {}
+    prefs.festive = lsGet("lj-festive") !== "off";
+    prefs.mid = lsGet("lj-mid") !== "off";
     setCurrencyCode(prefs.currency);
   }
   function savePrefs() {
     lsSet("budget-jars-theme", prefs.theme);
     lsSet("budget-jars-currency", prefs.currency);
     lsSet("lj-sound", prefs.sound ? "on" : "off");
+    lsSet("lj-festive", prefs.festive ? "on" : "off");
     lsSet("lj-reminder", JSON.stringify(prefs.reminder));
-    if (store && store.savePrefs && !state.readOnly) write(() => store.savePrefs({ theme: prefs.theme, currency: prefs.currency, sound: prefs.sound }));
+    lsSet("lj-mid", prefs.mid ? "on" : "off");
+    mirrorSoon();
+    if (store && store.savePrefs && !state.readOnly) write(() => store.savePrefs({ theme: prefs.theme, currency: prefs.currency, sound: prefs.sound, festive: prefs.festive }));
   }
+
+  // Festive mode: which occasion (if any) is on right now. Each has an id so picking another theme
+  // during it can switch festive mode off for just that occasion.
+  function festiveNow(d = new Date()) {
+    const y = d.getFullYear(), t = ymd(d), within = (from, to) => t >= ymd(from) && t <= ymd(to);
+    const off = (base, n) => { const x = new Date(base); x.setDate(x.getDate() + n); return x; };
+    const dw = DIWALI[y] && parseDay(`${y}-${DIWALI[y]}`);
+    if (dw && within(off(dw, -3), off(dw, 2))) return { skin: "diwali", id: `diwali-${y}`, name: "Diwali", until: off(dw, 2) };
+    const nov1 = new Date(y, 10, 1), thu = new Date(y, 10, 1 + ((4 - nov1.getDay() + 7) % 7) + 21);
+    if (within(off(thu, -3), off(thu, 3))) return { skin: "thanksgiving", id: `thanksgiving-${y}`, name: "Thanksgiving", until: off(thu, 3) };
+    if (t >= `${y}-12-15`) return { skin: "holiday", id: `holiday-${y}`, name: "the holidays", until: new Date(y + 1, 0, 1) };
+    if (t === `${y}-01-01`) return { skin: "holiday", id: `holiday-${y - 1}`, name: "the holidays", until: d };
+    return null;
+  }
+  const activeFestive = () => { const f = prefs.festive && festiveNow(); return f && lsGet("lj-festive-skip") !== f.id ? f : null; };
   const currentTheme = () => document.documentElement.dataset.skin || "auto";
-  function setTheme(id) {
-    prefs.theme = id;
-    if (id === "auto") delete document.documentElement.dataset.skin;
-    else document.documentElement.dataset.skin = id;
+  function applySkin() {
+    const f = activeFestive(), skin = f ? f.skin : prefs.theme;
+    if (skin === "auto") delete document.documentElement.dataset.skin;
+    else document.documentElement.dataset.skin = skin;
+    lsSet("lj-skin", skin);
     syncThemeExtras();
+  }
+  function setTheme(id, picked) {
+    prefs.theme = id;
+    if (picked) {
+      // Picking a theme during an occasion means "not this time", so festive mode steps aside until it ends.
+      const f = prefs.festive && festiveNow();
+      if (f && id !== f.skin) lsSet("lj-festive-skip", f.id);
+      try { const tried = new Set(JSON.parse(lsGet("lj-themes-tried") || "[]")); tried.add(id); lsSet("lj-themes-tried", JSON.stringify([...tried])); } catch {}
+    }
+    applySkin();
   }
   function syncThemeExtras() {
     const tc = $("themeColor"); if (tc) tc.setAttribute("content", getComputedStyle(document.body).backgroundColor);
-    const snow = $("snow"), on = currentTheme() === "holiday";
-    snow.hidden = !on;
-    if (on && !snow.childElementCount) {
-      snow.innerHTML = Array.from({ length: 36 }, () => {
-        const size = 3 + Math.random() * 5, dur = 9 + Math.random() * 10;
-        return `<i style="left:${(Math.random() * 100).toFixed(1)}%;width:${size.toFixed(1)}px;height:${size.toFixed(1)}px;--drift:${(Math.random() * 60 - 30).toFixed(0)}px;animation-duration:${dur.toFixed(1)}s;animation-delay:-${(Math.random() * dur).toFixed(1)}s"></i>`;
+    const snow = $("snow"), kind = { holiday: "snow", diwali: "spark", thanksgiving: "leaf" }[currentTheme()] || "";
+    snow.hidden = !kind;
+    if (kind && snow.dataset.kind !== kind) {
+      snow.dataset.kind = kind;
+      const n = kind === "leaf" ? 14 : kind === "spark" ? 30 : 36;
+      snow.innerHTML = Array.from({ length: n }, () => {
+        const size = kind === "leaf" ? 14 + Math.random() * 10 : kind === "spark" ? 2 + Math.random() * 3 : 3 + Math.random() * 5;
+        const dur = kind === "spark" ? 8 + Math.random() * 8 : kind === "leaf" ? 11 + Math.random() * 9 : 9 + Math.random() * 10;
+        const leaf = kind === "leaf" ? (Math.random() < .5 ? "🍂" : "🍁") : "";
+        const box = kind === "leaf" ? `font-size:${size.toFixed(0)}px` : `width:${size.toFixed(1)}px;height:${size.toFixed(1)}px`;
+        return `<i class="${kind === "snow" ? "" : kind}" style="left:${(Math.random() * 100).toFixed(1)}%;${box};--drift:${(Math.random() * 60 - 30).toFixed(0)}px;animation-duration:${dur.toFixed(1)}s;animation-delay:-${(Math.random() * dur).toFixed(1)}s">${leaf}</i>`;
       }).join("");
     }
   }
@@ -718,10 +870,33 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
   /* ---------- reminders (Android app only) ---------- */
   // The reminder fires every day at the chosen time, whether or not you've logged anything that day.
+  // The mid-month check-in (the 15th, late morning) carries a line about this month, refreshed whenever
+  // the jars change. If the app hasn't been opened this month, Android shows a generic line instead.
+  function midText() {
+    const m = curMonth(), limit = state.buckets.reduce((a, b) => a + (Number(b.limit) || 0), 0);
+    const spent = state.spends.filter((s) => (s.date || "").slice(0, 7) === m && state.buckets.some((b) => b.id === s.bucketId)).reduce((a, s) => a + (Number(s.amount) || 0), 0);
+    if (!(limit > 0)) return "";
+    const pct = Math.round(spent / limit * 100);
+    return pct <= 50 ? `Halfway through the month and you've used ${pct}% of your budget. Nicely done! 🌗`
+      : pct <= 100 ? `Halfway through the month: ${pct}% of your budget is used. A quick peek at your jars? 🌗`
+      : `Halfway through the month and your jars are over budget. Peek in and plan the rest 🌗`;
+  }
   async function syncReminder() {
     const rm = RM(); if (!rm) return;
     const [hour, minute] = prefs.reminder.time.split(":").map(Number);
-    try { await rm.configure({ on: prefs.reminder.on, hour, minute, messages: REMINDERS }); } catch {}
+    try { await rm.configure({ on: prefs.reminder.on, hour, minute, messages: REMINDERS, midOn: prefs.mid, midMonth: curMonth(), midText: midText() }); } catch {}
+  }
+  let syncTimer;
+  const syncReminderSoon = () => { clearTimeout(syncTimer); syncTimer = setTimeout(syncReminder, 2000); };
+  async function enableMid() {
+    const rm = RM(); if (!rm) return;
+    prefs.mid = true; savePrefs();
+    try {
+      const st = await rm.requestNotifications();
+      if (!st.notifications) { prefs.mid = false; savePrefs(); toast("Notifications are off for Little Jars. Turn them on in your phone's settings."); }
+    } catch {}
+    await syncReminder();
+    if (sheet && sheet.kind === "settings") renderSheet();
   }
   // Turning reminders on walks through Android's two prompts in one go: notifications, then
   // "Alarms & reminders" for exact timing. Skipping the second still works, within about 10 minutes.
@@ -759,7 +934,18 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       if (r && r.action === "log") { await dataReady; if (sheet && sheet.kind !== "spend") closeSheet(); if (!sheet) openAddSpend(); }
     } catch {}
   }
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") handleReminderTap(); });
+  // Coming back to the app: maybe a new day (festive theme, due repeats) or a reminder tap.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    handleReminderTap();
+    applySkin();
+    if (state.loaded.buckets && state.loaded.spends) { if (state.month > curMonth()) state.month = curMonth(); render(); nextPrompt("resume"); }
+  });
+  let changeTimer;
+  function dataChanged() {
+    clearTimeout(changeTimer);
+    changeTimer = setTimeout(() => { checkStickers(); syncReminderSoon(); }, 600);
+  }
 
   /* ---------- derived ---------- */
   const bucketColor = (b) => `var(--j${(b?.color ?? 0) % COLORS})`;
@@ -773,6 +959,89 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   const hash = (s) => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
   const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const fillOf = (b) => { const f = b.fill || "surprise"; return f === "surprise" ? FILLS[hash(b.id) % FILLS.length][0] : f; };
+
+  // Weekly rhythm: weeks in a row (Monday to Sunday) with at least one logged spend. This week only
+  // counts once you log something, and it never breaks the run while it's still going.
+  function rhythm() {
+    const weeks = new Set(state.spends.map((s) => s.date && weekOf(s.date)).filter(Boolean));
+    const d = parseDay(weekOf(todayStr()));
+    if (!weeks.has(ymd(d))) d.setDate(d.getDate() - 7);
+    let n = 0;
+    while (weeks.has(ymd(d))) { n++; d.setDate(d.getDate() - 7); }
+    return n;
+  }
+  // Totals for one month, using today's jar limits.
+  function monthStats(ym) {
+    const buckets = sortedBuckets(), ids = new Set(buckets.map((b) => b.id));
+    const ms = state.spends.filter((s) => (s.date || "").slice(0, 7) === ym && ids.has(s.bucketId));
+    const by = {};
+    ms.forEach((s) => { by[s.bucketId] = (by[s.bucketId] || 0) + (Number(s.amount) || 0); });
+    const limit = buckets.reduce((a, b) => a + (Number(b.limit) || 0), 0);
+    const spent = ms.reduce((a, s) => a + (Number(s.amount) || 0), 0);
+    return { ym, buckets, ms, by, limit, spent, left: limit - spent };
+  }
+  // Past months that have any spends, oldest first.
+  const pastMonths = () => [...new Set(state.spends.map((s) => (s.date || "").slice(0, 7)).filter((m) => m && m < curMonth()))].sort();
+
+  function earnedStickers() {
+    const n = state.spends.length, got = new Set();
+    if (state.buckets.length) got.add("first-jar");
+    if (n >= 1) got.add("first-spend");
+    if (n >= 10) got.add("ten");
+    if (n >= 50) got.add("fifty");
+    if (n >= 100) got.add("hundred");
+    if (state.buckets.length >= 5) got.add("shelf");
+    const months = pastMonths(), stats = months.map(monthStats);
+    const past = stats.filter((m) => m.limit > 0);
+    if (past.some((m) => m.left >= 0)) got.add("under");
+    if (past.some((m) => m.left >= m.limit * 0.2)) got.add("saver");
+    if (state.buckets.some((b) => {
+      const lim = Number(b.limit) || 0; if (!(lim > 0)) return false;
+      let run = 0;
+      for (let i = 0; i < months.length; i++) {
+        const back2back = i > 0 && shiftMonth(months[i - 1], 1) === months[i];
+        const ok = (stats[i].by[b.id] || 0) <= lim;
+        run = ok ? (back2back ? run + 1 : 1) : 0;
+        if (run >= 3) return true;
+      }
+      return false;
+    })) got.add("hero");
+    const r = rhythm();
+    if (r >= 4) got.add("rhythm4");
+    if (r >= 8) got.add("rhythm8");
+    if (r >= 12) got.add("rhythm12");
+    if (state.recurring.length) got.add("repeat");
+    if (lsGet("lj-used-math")) got.add("math");
+    if (lsGet("lj-backup-at")) got.add("backup");
+    if (lsGet("lj-wrap-opened")) got.add("wrap");
+    try { if (JSON.parse(lsGet("lj-themes-tried") || "[]").length >= 3) got.add("explorer"); } catch {}
+    return got;
+  }
+  // Stickers stay earned once earned (a streak can end, the sticker stays). New ones get a toast,
+  // except the very first time we look, so existing users aren't flooded.
+  function stickerShelf() {
+    let saved = null;
+    try { saved = JSON.parse(lsGet("lj-stickers") || "null"); } catch {}
+    const first = !saved; saved = saved || {};
+    const fresh = [...earnedStickers()].filter((id) => !saved[id]);
+    fresh.forEach((id) => (saved[id] = todayStr()));
+    if (fresh.length) { lsSet("lj-stickers", JSON.stringify(saved)); mirrorSoon(); }
+    return { saved, fresh: first ? [] : fresh };
+  }
+  function checkStickers() {
+    if (!state.loaded.buckets || !state.loaded.spends || !state.loaded.recurring) return;
+    const { fresh } = stickerShelf();
+    if (!fresh.length) return;
+    const st = STICKERS.find((x) => x[0] === fresh[0]);
+    setTimeout(() => toastLater(`${st[1]} New sticker: ${st[2]}!${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ""}`, 3600), 1600);
+    happyMoment();
+  }
+
+  // Monthly repeats that are due: their day has come this month and they haven't been added or skipped.
+  function dueRepeats() {
+    const m = curMonth(), today = new Date().getDate(), dim = daysIn(m);
+    return state.recurring.filter((r) => (r.lastMonth || "") < m && today >= Math.min(Number(r.day) || 1, dim) && state.buckets.some((b) => b.id === r.bucketId));
+  }
 
   /* ---------- jar drawing ---------- */
   const JAR_BODY = "M16 36 Q16 28 26 28 H74 Q84 28 84 36 V114 Q84 128 70 128 H30 Q16 128 16 114 Z";
@@ -796,9 +1065,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         s += `<g transform="translate(${f(cx)} ${f(cy)}) rotate(${f(rot)})"><path d="M0 -7 C.8 -4.5 5.5 -1 5.5 2.5 C5.5 5.5 3 7 0 7 C-3 7 -5.5 5.5 -5.5 2.5 C-5.5 -1 -.8 -4.5 0 -7Z" fill="${foil ? "#C9CFD8" : "#6B3F1F"}" stroke="${foil ? "#8E97A3" : "#4A2A12"}" stroke-width=".6"/><path d="M-2 0 Q-1 -3 0 -5" stroke="#FFF" stroke-width=".9" fill="none" opacity=".7"/><path d="M0 -7 q2 -3 4.5 -3.5" stroke="#F4F6FA" stroke-width="1.1" fill="none"/></g>`;
       }
     } else if (type === "cash") {
+      // Each bill shows your currency's symbol; longer symbols (like CA$) get smaller.
+      const sym = esc(currency.symbol), sz = Math.min(5, 9 / Math.max(1, [...currency.symbol].length));
       for (let row = 0; row < 16; row++) for (let k = 0; k < 3; k++) {
         const cx = 18 + k * 30 + (r() - .5) * 16, cy = 4 + row * 7 + (row === 0 ? -r() * 3 : 0), rot = (r() - .5) * 50;
-        s += `<g transform="translate(${f(cx)} ${f(cy)}) rotate(${f(rot)})"><rect x="-14" y="-6.5" width="28" height="13" rx="1.5" fill="#5DBB75" stroke="#2F7D46" stroke-width=".8"/><rect x="-11" y="-4" width="22" height="8" rx="1" fill="none" stroke="#2F7D46" stroke-width=".5" opacity=".6"/><circle r="3.2" fill="#E8F5E9"/><text y="2" text-anchor="middle" font-size="5" font-weight="700" fill="#2F7D46">$</text></g>`;
+        s += `<g transform="translate(${f(cx)} ${f(cy)}) rotate(${f(rot)})"><rect x="-14" y="-6.5" width="28" height="13" rx="1.5" fill="#5DBB75" stroke="#2F7D46" stroke-width=".8"/><rect x="-11" y="-4" width="22" height="8" rx="1" fill="none" stroke="#2F7D46" stroke-width=".5" opacity=".6"/><circle r="3.2" fill="#E8F5E9"/><text y="${f(1 + sz * .36)}" text-anchor="middle" font-size="${f(sz)}" font-weight="700" fill="#2F7D46">${sym}</text></g>`;
       }
     } else if (type === "coins") {
       for (let row = 0; row < 22; row++) for (let x = 16 + (row % 2) * 7; x < 92; x += 14) {
@@ -899,7 +1170,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       </div>
       <div class="sum-line num"><span><b>${money(spent)}</b> spent</span><span><b>${money(limit)}</b> budgeted</span><span><b>${buckets.length}</b> jar${buckets.length === 1 ? "" : "s"}</span></div>
       <div class="stack" role="img" aria-label="${money(spent)} of ${money(limit)} spent">${segs}</div>
-      ${pace ? `<div class="pace">${pace}</div>` : ""}`;
+      ${pace ? `<div class="pace">${pace}</div>` : ""}
+      ${badgesLine()}`;
 
     $("jars").innerHTML = loading ? "" : buckets.map((b) => {
       const sp = by[b.id] || 0, lim = Number(b.limit) || 0, lf = lim - sp;
@@ -925,10 +1197,23 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (drawer.open) renderDrawer();
     if (sheet && sheet.kind === "detail") renderSheet();
   }
+  function badgesLine() {
+    let saved = {};
+    try { saved = JSON.parse(lsGet("lj-stickers") || "{}") || {}; } catch {}
+    const n = Object.keys(saved).length, r = rhythm();
+    const wrap = state.month < curMonth() && monthStats(state.month).ms.length;
+    const parts = [
+      n ? `<button class="mini" data-stickers>🏅 ${n} sticker${n === 1 ? "" : "s"}</button>` : "",
+      r >= 2 ? `<button class="mini" data-rhythm>🎵 ${r}-week rhythm</button>` : "",
+      wrap ? `<button class="mini" data-wrap="${state.month}">🎁 ${monthName(state.month).split(" ")[0]} Jar Wrap</button>` : "",
+    ].join("");
+    return parts ? `<div class="badges">${parts}</div>` : "";
+  }
   function spendRow(s, b, showDate = true) {
-    return `<div class="row" style="--c:${bucketColor(b)}">
+    const edit = state.readOnly ? "" : ` data-edit-spend="${esc(s.id)}" role="button" tabindex="0" aria-label="Edit ${esc(money(Number(s.amount) || 0))}${s.note ? " " + esc(s.note) : ""}"`;
+    return `<div class="row" style="--c:${bucketColor(b)}"${edit}>
       <div class="row-emoji" aria-hidden="true">${esc(b?.emoji || "🫙")}</div>
-      <div class="row-main"><div class="row-title">${esc(s.note || b?.name || "Spend")}</div><div class="row-meta">${esc(b?.name || "Deleted jar")}${showDate ? " · " + shortDate(s.date) : ""}</div></div>
+      <div class="row-main"><div class="row-title">${s.repeat ? "🔁 " : ""}${esc(s.note || b?.name || "Spend")}</div><div class="row-meta">${esc(b?.name || "Deleted jar")}${showDate ? " · " + shortDate(s.date) : ""}</div></div>
       <div class="row-amt num">${money(Number(s.amount) || 0)}</div>
       ${state.readOnly ? "" : `<button class="row-del" data-del-spend="${esc(s.id)}" aria-label="Delete this spend">×</button>`}
     </div>`;
@@ -1003,7 +1288,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const was = sheet.kind;
     sheet = null; $("sheetRoot").innerHTML = "";
     if (!fromPop) popLayer("sheet");
-    if (was === "whatsnew" || was === "remindAsk") afterOnboarding(was);
+    if (was === "due") dueDismissed = true;
+    if (["whatsnew", "remindAsk", "wrap", "due"].includes(was)) nextPrompt(was);
+    if (was === "wrap") happyMoment();
   }
 
   function renderSheet(anim) {
@@ -1012,7 +1299,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (sheet.kind === "spend") {
       const buckets = sortedBuckets();
       const v = evalAmount(sheet.amount || "");
-      html = `<div class="sheet-head"><h3>Add spend</h3><button class="x" data-close aria-label="Close">×</button></div>
+      const day = Number((sheet.date || todayStr()).slice(8, 10));
+      html = `<div class="sheet-head"><h3>${sheet.editId ? "Edit spend" : "Add spend"}</h3><button class="x" data-close aria-label="Close">×</button></div>
         <form id="spendForm" style="display:grid;gap:14px" novalidate>
           <label class="f">Amount
             <div class="amount-wrap"><span>${esc(currency.symbol)}</span><input class="t amount num" id="spAmount" inputmode="decimal" autocomplete="off" placeholder="0" style="padding-left:${22 + currency.symbol.length * 20}px" value="${esc(sheet.amount || "")}" autofocus></div>
@@ -1025,8 +1313,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
             <label class="f">What was it? <input class="t" id="spNote" placeholder="Trader Joe's" maxlength="80" value="${esc(sheet.note || "")}"></label>
             <label class="f">Date <input class="t" id="spDate" type="date" value="${esc(sheet.date || todayStr())}"></label>
           </div>
+          ${sheet.editId && sheet.repeatOf ? "" : `<div class="set-row"><span>🔁 Repeat monthly<small>${sheet.repeat ? `On the ${ordinal(day)} of each month, we'll ask before adding it` : "For rent, bills and subscriptions"}</small></span><span class="switch"><input type="checkbox" id="spRepeat" aria-label="Repeat monthly" ${sheet.repeat ? "checked" : ""}><i></i></span></div>`}
           ${sheet.error ? `<div class="err">${esc(sheet.error)}</div>` : ""}
-          <div class="actions"><button class="btn primary" type="submit">Add spend</button></div>
+          <div class="actions">${sheet.editId ? `<button type="button" class="btn danger" data-del-spend="${esc(sheet.editId)}">Delete</button>` : ""}<button class="btn primary" type="submit">${sheet.editId ? "Save changes" : "Add spend"}</button></div>
         </form>`;
     } else if (sheet.kind === "bucket") {
       const b = sheet.draft, buckets = sortedBuckets(), idx = sheet.id ? buckets.findIndex((x) => x.id === sheet.id) : -1;
@@ -1053,14 +1342,17 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
           <div class="actions"><button class="btn primary" type="submit">${sheet.id ? "Save jar" : "Create jar"}</button></div>
         </form>`;
     } else if (sheet.kind === "settings") {
-      const cur = currentTheme(), ln = !!RM();
+      const ln = !!RM(), f = prefs.festive && festiveNow(), fa = activeFestive();
+      const nRep = state.recurring.length, lastBackup = lsGet("lj-backup-at");
+      let saved = {}; try { saved = JSON.parse(lsGet("lj-stickers") || "{}") || {}; } catch {}
       html = `<div class="sheet-head"><h3>Settings</h3><button class="x" data-close aria-label="Close">×</button></div>
         <div class="f">Theme
-          <div class="themes">${THEMES.map((th) => `<button class="theme-opt" data-pick-theme="${th.id}" aria-pressed="${cur === th.id}">
+          <div class="themes">${THEMES.map((th) => `<button class="theme-opt" data-pick-theme="${th.id}" aria-pressed="${prefs.theme === th.id}">
             <span class="swatch" aria-hidden="true">${th.sw.map((c) => `<i style="background:${c}"></i>`).join("")}</span>
             <span><b>${th.name}</b><span>${th.desc}</span></span>
           </button>`).join("")}</div>
         </div>
+        <div class="set-row"><span>🎉 Festive mode<small>${fa ? `Showing the ${esc(THEMES.find((t) => t.id === fa.skin).name)} theme for ${esc(fa.name)}, until ${fa.until.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : f ? `Taking a break for ${esc(f.name)} since you picked a theme` : "Dresses up for Diwali, Thanksgiving and the holidays, then switches back"}</small></span><span class="switch"><input type="checkbox" id="festiveToggle" aria-label="Festive mode" ${prefs.festive ? "checked" : ""}><i></i></span></div>
         <label class="f">Currency
           <select class="t" id="curSel">${CURRENCIES.map(([code, name]) => `<option value="${code}" ${code === currency.code ? "selected" : ""}>${code} · ${name}</option>`).join("")}</select>
           <span class="row-meta" style="font-weight:400">Example: ${esc(money(1234.5))}. Changing currency relabels your amounts; it doesn't convert them.</span>
@@ -1068,13 +1360,30 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         <div class="set-row"><span>🔔 Cha-ching sound<small>Plays when you add a spend</small></span><span class="switch"><input type="checkbox" id="soundToggle" aria-label="Cha-ching sound" ${prefs.sound ? "checked" : ""}><i></i></span></div>
         ${ln ? `<div class="set-row"><span>🌙 Daily reminder<small>A gentle nudge to log your spends</small></span><span class="switch"><input type="checkbox" id="remToggle" aria-label="Daily reminder" ${prefs.reminder.on ? "checked" : ""}><i></i></span></div>
         ${prefs.reminder.on ? `<div class="set-row"><span>Remind me at</span><input type="time" id="remTime" value="${esc(prefs.reminder.time)}"></div>
-        <button class="btn" data-test-nudge style="text-align:left">🔔 Send a test nudge in 10 seconds</button>` : ""}` : ""}
-        <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
+        <button class="btn" data-test-nudge style="text-align:left">🔔 Send a test nudge in 10 seconds</button>` : ""}
+        <div class="set-row"><span>🌗 Mid-month check-in<small>On the 15th: how your jars are doing so far</small></span><span class="switch"><input type="checkbox" id="midToggle" aria-label="Mid-month check-in" ${prefs.mid ? "checked" : ""}><i></i></span></div>` : ""}
+        <div class="set-group">
+          <div class="eyebrow">Fun stuff</div>
+          <button class="btn" data-stickers style="text-align:left">🏅 Jar stickers <span class="row-meta">· ${Object.keys(saved).length} of ${STICKERS.length}</span></button>
+          ${pastMonths().length ? `<button class="btn" data-wrap="${pastMonths().slice(-1)[0]}" style="text-align:left">🎁 ${monthName(pastMonths().slice(-1)[0]).split(" ")[0]} Jar Wrap</button>` : ""}
+          ${nRep ? `<button class="btn" data-recurring style="text-align:left">🔁 Monthly repeats <span class="row-meta">· ${nRep}</span></button>` : ""}
+        </div>
+        ${state.readOnly ? "" : `<div class="set-group">
+          <div class="eyebrow">Your data</div>
+          <div class="btn-row"><button class="btn" data-backup>💾 Back up</button><button class="btn" data-restore>📂 Restore</button><button class="btn" data-csv>📊 Export CSV</button></div>
+          <div class="row-meta">${lastBackup ? `Last backup: ${new Date(Number(lastBackup)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. ` : ""}A backup is one small file with all your jars and spends. Keep it somewhere safe, like your Drive or email${JT() ? ". Android's own backup also brings your jars along to a new phone" : IN_CLAUDE ? "" : ", and use Restore on a new phone"}.</div>
+        </div>`}
+        <div class="set-group">
+          <div class="eyebrow">Say hi</div>
+          ${JT() ? `<button class="btn" data-rate-store style="text-align:left">⭐ Rate Little Jars</button>` : ""}
+          <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
+        </div>
         <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button></div>
         <div class="version">Little Jars ${APP_VERSION}</div>`;
     } else if (sheet.kind === "feature") {
-      html = `<div class="sheet-head"><h3>💌 Request a feature</h3><button class="x" data-close aria-label="Close">×</button></div>
+      html = `<div class="sheet-head"><h3>${sheet.feedback ? "💬 Help us do better" : "💌 Request a feature"}</h3><button class="x" data-close aria-label="Close">×</button></div>
         <form id="featureForm" style="display:grid;gap:14px" novalidate>
+          ${sheet.feedback ? `<p style="margin:0">Thanks for being honest! What's bugging you, or what's missing? We read every note.</p>` : ""}
           <label class="f">What would make Little Jars better?<textarea class="t" id="ftIdea" maxlength="1500" placeholder="I wish my jars could…" autofocus>${esc(sheet.idea || "")}</textarea></label>
           <label class="f">Your name (optional) <input class="t" id="ftName" maxlength="60" value="${esc(sheet.name || "")}"></label>
           ${sheet.error ? `<div class="err">${esc(sheet.error)}</div>` : ""}
@@ -1084,20 +1393,71 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         </form>`;
     } else if (sheet.kind === "whatsnew") {
       const items = [
-        ["🫙", "We're <b>Little Jars</b> now! Same jars, cuter name."],
-        ["🍬", "Jars got snacks: liquid, candy, chocolate kisses, cash or coins. Edit a jar to pick, or let us surprise you."],
-        ["📦", "Peek into the box from the top. Every lid wears its name tag."],
-        ["📎", "Expenses moved into a drawer. Tug the paper clip on the right."],
-        ["🔔", "Cha-ching! Spends now jingle. (Shh, you can mute it in Settings.)"],
-        ["🧮", "Math mode: type 12+10 and we'll do the homework."],
-        ["🫳", "Hold a jar and drag it to put your favorites first."],
-        ...(RM() ? [["🌙", "Gentle evening nudges to log your day. We promise to be nice."]] : []),
-        ["🙅", "Oops-proofing: we now double-check before deleting anything, and stop you from making two jars with the same name."],
-        ["💌", "Got an idea? Settings → Request a feature. We read every single one."],
+        ["✏️", "Oops, typo? Tap any spend to <b>edit</b> it."],
+        ["🔁", "<b>Monthly repeats</b> for rent, bills and subscriptions. We'll ask before adding them, so nothing sneaks in."],
+        ["💾", "<b>Back up</b> your jars to a file, <b>restore</b> them anywhere, or export a <b>CSV</b> for spreadsheets. Settings → Your data."],
+        ...(JT() ? [["📲", "Getting a new phone? Android's own backup now brings your jars along."]] : []),
+        ["🎁", "<b>Jar Wrap</b>: a cute recap of last month, ready to share (without the amounts)."],
+        ["🏅", "<b>Jar stickers</b> to collect, and a <b>weekly rhythm</b> that counts the weeks you log. Miss a day? No stress."],
+        ["⚠️", "Jars now give you a heads-up when they're almost empty."],
+        ...(RM() ? [["🌗", "A <b>mid-month check-in</b> on the 15th: how your jars are doing so far."]] : []),
+        ["💵", "Cash jars now print your own currency on the bills."],
+        ["🪔", "New <b>Diwali</b> and <b>Thanksgiving</b> themes, and <b>Festive mode</b> dresses your jars up on the right days, all by itself."],
       ];
       html = `<div class="sheet-head"><h3>Psst… we've been busy ✨</h3><button class="x" data-close aria-label="Close">×</button></div>
         <ul class="news">${items.map(([e, t]) => `<li><span aria-hidden="true">${e}</span><div>${t}</div></li>`).join("")}</ul>
         <div class="actions"><button class="btn" data-replay-tour>Show me around</button><button class="btn primary" data-close>Let's go!</button></div>`;
+    } else if (sheet.kind === "due") {
+      const due = dueRepeats().filter((r) => !sheet.done || !sheet.done.includes(r.id));
+      if (!due.length) { closeSheet(); return; }
+      const one = due.length === 1 && due[0], ob = one && state.buckets.find((b) => b.id === one.bucketId);
+      html = `<div class="sheet-head"><h3>🔁 ${one ? `${esc(one.note || ob.name)} is due` : `${due.length} repeats are due`}</h3><button class="x" data-close aria-label="Close">×</button></div>
+        ${one ? `<p style="margin:0"><b class="num">${esc(money(Number(one.amount) || 0))}</b> for <b>${esc(one.note || ob.name)}</b> in ${esc(ob.emoji || "🫙")} ${esc(ob.name)} is due ${Number(one.day) === new Date().getDate() ? "today" : `since the ${ordinal(Math.min(Number(one.day) || 1, daysIn(curMonth())))}`}. Add it?</p>
+          <div class="actions"><button class="btn" data-skip-due="${esc(one.id)}">Skip this month</button><button class="btn primary" data-add-due="${esc(one.id)}">Add it</button></div>`
+        : `<p style="margin:0">These monthly spends are due. Add the ones you've paid:</p>
+          <div class="due">${due.map((r) => { const b = state.buckets.find((x) => x.id === r.bucketId); return `<div class="due-item" style="--c:${bucketColor(b)}">
+            <div class="row-emoji" aria-hidden="true">${esc(b.emoji || "🫙")}</div>
+            <div class="row-main"><b class="num">${esc(money(Number(r.amount) || 0))}</b><div class="row-meta">${esc(r.note || b.name)} · ${ordinal(Number(r.day) || 1)}</div></div>
+            <div class="actions"><button class="btn" data-skip-due="${esc(r.id)}" aria-label="Skip ${esc(r.note || b.name)}">Skip</button><button class="btn primary" data-add-due="${esc(r.id)}" aria-label="Add ${esc(r.note || b.name)}">Add</button></div>
+          </div>`; }).join("")}</div>
+          <div class="actions"><button class="btn primary" data-add-due="all">Add all ${due.length}</button></div>`}`;
+    } else if (sheet.kind === "recurring") {
+      const list = [...state.recurring].sort((a, b) => (Number(a.day) || 0) - (Number(b.day) || 0));
+      html = `<div class="sheet-head"><h3>🔁 Monthly repeats</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <p class="row-meta" style="margin:0">On each day below, we'll ask before adding the spend. Turn on <b>Repeat monthly</b> when you add a spend to make a new one.</p>
+        <div class="detail-list">${list.length ? list.map((r) => { const b = state.buckets.find((x) => x.id === r.bucketId); return `<div class="row" style="--c:${bucketColor(b)}">
+          <div class="row-emoji" aria-hidden="true">${esc(b?.emoji || "🫙")}</div>
+          <div class="row-main"><div class="row-title">${esc(r.note || b?.name || "Spend")}</div><div class="row-meta">${esc(b?.name || "Deleted jar")} · ${ordinal(Number(r.day) || 1)} of each month</div></div>
+          <div class="row-amt num">${money(Number(r.amount) || 0)}</div>
+          ${state.readOnly ? "" : `<button class="btn danger" data-stop-repeat="${esc(r.id)}" style="padding:8px 10px">Stop</button>`}
+        </div>`; }).join("") : `<div class="empty">No monthly repeats yet.</div>`}</div>`;
+    } else if (sheet.kind === "wrap") {
+      const w = wrapData(sheet.month);
+      html = `<div class="sheet-head"><h3>🎁 Your ${esc(w.monthShort)} Jar Wrap</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <div class="wrap-card">
+          ${sheet.confetti ? `<div class="confetti" aria-hidden="true">${confettiBits()}</div>` : ""}
+          <h4>${esc(w.headline)}</h4>
+          <div class="wrap-stats">
+            <div class="wrap-stat wide"><b class="num" style="${w.left < 0 ? "color:var(--danger)" : ""}">${w.left >= 0 ? `${esc(money(w.left))} left over` : `${esc(money(-w.left))} over`}</b><span>${esc(money(w.spent))} spent of ${esc(money(w.limit))}</span></div>
+            <div class="wrap-stat"><b class="num">${w.count}</b><span>spend${w.count === 1 ? "" : "s"} logged on ${w.days} day${w.days === 1 ? "" : "s"}</span></div>
+            <div class="wrap-stat"><b>${w.top ? `${esc(w.top.emoji || "🫙")} ${esc(w.top.name)}` : "—"}</b><span>busiest jar${w.top ? ` · ${esc(money(w.topSpent))}` : ""}</span></div>
+            <div class="wrap-stat"><b>${w.hero ? `${esc(w.hero.emoji || "🫙")} ${esc(w.hero.name)}` : "—"}</b><span>${w.hero ? `jar hero · ${w.heroPct}% left` : "jar hero"}</span></div>
+            <div class="wrap-stat"><b class="num">${w.biggest ? esc(money(Number(w.biggest.amount) || 0)) : "—"}</b><span>biggest spend${w.biggest && w.biggest.note ? ` · ${esc(w.biggest.note)}` : ""}</span></div>
+            <div class="wrap-stat wide"><b>${w.under} of ${w.jarCount} jar${w.jarCount === 1 ? "" : "s"} stayed under their limit</b><span>${esc(w.cheer)}</span></div>
+          </div>
+        </div>
+        <div class="actions"><button class="btn" data-share-wrap="${esc(sheet.month)}">📤 Share</button><button class="btn primary" data-close>${w.left >= 0 ? "Yay!" : "Onward!"}</button></div>
+        <div class="row-meta" style="text-align:center">The shared picture shows percentages, never your amounts.</div>`;
+    } else if (sheet.kind === "stickers") {
+      const { saved } = stickerShelf(), r = rhythm();
+      html = `<div class="sheet-head"><h3>🏅 Jar stickers</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <p class="row-meta" style="margin:0">${Object.keys(saved).length} of ${STICKERS.length} collected. ${r >= 1 ? `Your weekly rhythm: <b>${r} week${r === 1 ? "" : "s"}</b> in a row 🎵` : "Log something this week to start a weekly rhythm 🎵"}</p>
+        <div class="stickers">${STICKERS.map(([id, e, name, how]) => `<div class="sticker ${saved[id] ? "got" : ""}"><span aria-hidden="true">${e}</span><b>${esc(name)}</b><small>${saved[id] ? `Earned ${shortDate(saved[id])}` : esc(how)}</small></div>`).join("")}</div>`;
+    } else if (sheet.kind === "rate") {
+      html = `<div class="sheet-head"><h3>Enjoying Little Jars?</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <div class="rate-faces" aria-hidden="true">🫙💛</div>
+        <p style="margin:0;text-align:center">You've been filling your jars for a while now. How's it going?</p>
+        <div class="actions"><button class="btn" data-rate-no>Not really</button><button class="btn primary" data-rate-yes>Love it! 😍</button></div>`;
     } else if (sheet.kind === "remindAsk") {
       html = `<div class="sheet-head"><h3>🌙 Want a gentle nudge?</h3><button class="x" data-close aria-label="Close">×</button></div>
         <p style="margin:0">We can send one friendly reminder at <b>9 PM</b> to log your spends. No nagging, promise. You can change the time or turn it off in Settings.</p>
@@ -1118,6 +1478,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
           <div class="pace num" style="text-align:left">${money(sp)} spent of ${money(lim)}</div>
         </div>
         <div class="detail-list">${list.length ? list.map((s) => spendRow(s, b)).join("") : `<div class="empty">Nothing spent from this jar in ${monthName(state.month).split(" ")[0]}.</div>`}</div>
+        ${(() => { const reps = state.recurring.filter((r) => r.bucketId === b.id); return reps.length ? `<div class="set-row"><span>🔁 Repeats monthly<small>${reps.map((r) => `${esc(r.note || b.name)} · ${esc(money(Number(r.amount) || 0))} on the ${ordinal(Number(r.day) || 1)}`).join("<br>")}</small></span><button class="link-btn" data-recurring>Manage</button></div>` : ""; })()}
         ${state.readOnly ? "" : sheet.confirmDelete ? `<div class="confirm"><div>Delete <b>${esc(b.name)}</b>${all ? ` and its ${all} logged spend${all === 1 ? "" : "s"} (all months)` : ""}? This can't be undone.</div>
           <div class="actions"><button class="btn danger solid" data-delete-bucket-yes>Delete jar</button><button class="btn" data-delete-bucket-no>Keep it</button></div></div>`
         : `<div class="actions"><button class="btn primary" data-spend-in="${esc(b.id)}">Add spend here</button><button class="btn" data-edit="${esc(b.id)}">Edit</button><button class="btn danger" data-delete-bucket>Delete</button></div>`}`;
@@ -1164,6 +1525,10 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.id === "curSel") { setCurrencyCode(t.value); prefs.currency = currency.code; savePrefs(); render(); renderSheet(); }
     if (t.id === "soundToggle") { prefs.sound = t.checked; savePrefs(); if (prefs.sound) chaChing(); }
     if (t.id === "remToggle") { if (t.checked) enableReminder(); else { prefs.reminder.on = false; savePrefs(); syncReminder(); } renderSheet(); }
+    if (t.id === "spRepeat") { sheet.repeat = t.checked; renderSheet(); }
+    if (t.id === "festiveToggle") { prefs.festive = t.checked; if (t.checked) lsSet("lj-festive-skip", ""); savePrefs(); applySkin(); renderSheet(); }
+    if (t.id === "midToggle") { if (t.checked) enableMid(); else { prefs.mid = false; savePrefs(); syncReminder(); } }
+    if (t.id === "restoreFile" && t.files && t.files[0]) { const f = t.files[0]; t.value = ""; f.text().then(restoreFrom, () => toast("Couldn't read that file.")); }
     if (t.id === "remTime" && t.value) { prefs.reminder.time = t.value; savePrefs(); syncReminder(); toast(`We'll nudge you at ${fmtTime(t.value)}`); }
   });
   const fmtTime = (hm) => { const [h, m] = hm.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); };
@@ -1171,7 +1536,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   let suppressClickUntil = 0;
   document.addEventListener("click", async (e) => {
     if (Date.now() < suppressClickUntil) { e.preventDefault(); return; }
-    const t = e.target.closest("button, [data-open], [data-scrim], [data-confirm-scrim], #drawerScrim");
+    const t = e.target.closest("button, [data-open], [data-edit-spend], [data-scrim], [data-confirm-scrim], #drawerScrim");
     if (!t) return;
     if (t.matches("[data-confirm-scrim]") && e.target === t) return answerConfirm(false);
     if (t.dataset.ans) return answerConfirm(t.dataset.ans === "1");
@@ -1194,7 +1559,26 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.dataset.fill) { sheet.draft.fill = t.dataset.fill; return renderSheet(); }
     if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; sheet.error = ""; return renderSheet(); }
     if (t.dataset.move) { await moveBucket(sheet.id, Number(t.dataset.move)); return renderSheet(); }
-    if (t.dataset.pickTheme) { setTheme(t.dataset.pickTheme); savePrefs(); return renderSheet(); }
+    if (t.dataset.pickTheme) { setTheme(t.dataset.pickTheme, true); savePrefs(); checkStickers(); return renderSheet(); }
+    if (t.dataset.editSpend) return openEditSpend(t.dataset.editSpend);
+    if (t.matches("[data-stickers]")) return openSheet({ kind: "stickers" });
+    if (t.matches("[data-rhythm]")) return toast(`🎵 You've logged something ${rhythm()} weeks in a row. One spend a week keeps it going!`, 4000);
+    if (t.dataset.wrap) return openWrap(t.dataset.wrap, false);
+    if (t.dataset.shareWrap) return shareWrap(t.dataset.shareWrap);
+    if (t.matches("[data-recurring]")) return openSheet({ kind: "recurring" });
+    if (t.dataset.stopRepeat) {
+      const r = state.recurring.find((x) => x.id === t.dataset.stopRepeat); if (!r) return;
+      const ok = await ask({ title: "Stop this repeat?", text: `We'll stop asking about <b>${esc(r.note || "this spend")}</b> (${esc(money(Number(r.amount) || 0))}) each month. Spends you already added stay put.`, yes: "Stop it", no: "Keep it" });
+      if (ok) await write(() => store.remove("recurring", r.id), "Repeat stopped");
+      return;
+    }
+    if (t.dataset.addDue || t.dataset.skipDue) return answerDue(t.dataset.addDue || t.dataset.skipDue, !!t.dataset.addDue);
+    if (t.matches("[data-backup]")) return backup();
+    if (t.matches("[data-restore]")) return pickRestore();
+    if (t.matches("[data-csv]")) return exportCsv();
+    if (t.matches("[data-rate-store]")) { try { await JT().openStore(); } catch { toast("Couldn't open Google Play."); } return; }
+    if (t.matches("[data-rate-yes]")) { lsSet("lj-rate", "done"); closeSheet(); try { await JT().requestReview(); } catch { try { await JT().openStore(); } catch {} } return; }
+    if (t.matches("[data-rate-no]")) { lsSet("lj-rate", "done"); return openSheet({ kind: "feature", feedback: true }); }
     if (t.matches("[data-feature]")) return openSheet({ kind: "feature" });
     if (t.matches("[data-test-nudge]")) return testNudge();
     if (t.matches("[data-copy-feature]")) return copyText(featureBody(), "Note copied. Paste it into an email to us.");
@@ -1219,7 +1603,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       if (!s) return;
       const b = state.buckets.find((x) => x.id === s.bucketId);
       const ok = await ask({ title: "Delete this spend?", text: `<b>${esc(money(Number(s.amount) || 0))}</b>${s.note ? ` · ${esc(s.note)}` : ""} from <b>${esc(b ? b.name : "this jar")}</b> on ${shortDate(s.date)}. This can't be undone.` });
-      if (ok) await write(() => store.remove("spends", s.id), `Deleted ${money(Number(s.amount) || 0)}`);
+      if (ok) { if (sheet && sheet.editId === s.id) closeSheet(); await write(() => store.remove("spends", s.id), `Deleted ${money(Number(s.amount) || 0)}`); }
     }
   });
 
@@ -1230,12 +1614,24 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       if (!(amt > 0)) { sheet.error = "Enter an amount above 0."; return renderSheet(); }
       if (amt > MAX_AMOUNT) { sheet.error = `That's more than ${money(MAX_AMOUNT)}. Try a smaller amount.`; return renderSheet(); }
       if (!sheet.bucketId) { sheet.error = "Pick a jar for this spend."; return renderSheet(); }
+      if (hasOps(sheet.amount || "")) lsSet("lj-used-math", "1");
       const b = state.buckets.find((x) => x.id === sheet.bucketId);
-      const data = { bucketId: sheet.bucketId, amount: amt, note: (sheet.note || "").trim(), date: sheet.date || todayStr(), createdAt: Date.now() };
+      const date = sheet.date || todayStr(), note = (sheet.note || "").trim(), editId = sheet.editId, repeat = sheet.repeat;
+      const before = jarUse(sheet.bucketId, editId);
       closeSheet();
-      if (data.date.slice(0, 7) !== state.month) state.month = data.date.slice(0, 7);
-      chaChing();
-      await write(() => store.add("spends", data), `Added ${money(amt)} to ${b ? b.name : "jar"}`);
+      if (date.slice(0, 7) !== state.month) state.month = date.slice(0, 7);
+      if (editId) {
+        await write(() => store.update("spends", editId, { bucketId: b.id, amount: amt, note, date }), `Saved ${money(amt)} in ${b.name}`);
+      } else {
+        chaChing();
+        await write(() => store.add("spends", { bucketId: b.id, amount: amt, note, date, createdAt: Date.now() }), `Added ${money(amt)} to ${b.name}`);
+      }
+      if (repeat) {
+        const day = Number(date.slice(8, 10));
+        const ok = await write(() => store.add("recurring", { bucketId: b.id, amount: amt, note, day, lastMonth: date.slice(0, 7), createdAt: Date.now() }));
+        if (ok) toast(`🔁 We'll ask about ${note || b.name} on the ${ordinal(day)} of each month`, 3600);
+      } else headsUp(b, before, amt, date);
+      happyMoment();
     }
     if (e.target.id === "bucketForm") {
       const d = sheet.draft, name = (d.name || "").trim(), lim = evalAmount(d.limit || "");
@@ -1265,7 +1661,10 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast("Couldn't copy. Long-press the email address to copy it."); }
   }
 
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (tourActive) endTour(); else closeTop(); } });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { if (tourActive) endTour(); else closeTop(); }
+    if ((e.key === "Enter" || e.key === " ") && e.target.dataset && e.target.dataset.editSpend) { e.preventDefault(); openEditSpend(e.target.dataset.editSpend); }
+  });
 
   function openAddSpend(bucketId) {
     if (!state.buckets.length) return openBucket();
@@ -1276,6 +1675,224 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const used = new Set(state.buckets.map((x) => x.color));
     let free = 0; while (used.has(free) && free < COLORS - 1) free++;
     openSheet({ kind: "bucket", id: id || null, draft: b ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0, fill: b.fill || "surprise" } : { name: "", limit: "", emoji: "🛒", color: free, fill: "surprise" } });
+  }
+
+  function openEditSpend(id) {
+    const s = state.spends.find((x) => x.id === id); if (!s || state.readOnly) return;
+    const next = { kind: "spend", editId: s.id, repeatOf: s.repeat || null, bucketId: s.bucketId, amount: String(s.amount), note: s.note || "", date: s.date || todayStr() };
+    openSheet(next);
+  }
+
+  /* ---------- jar heads-up: a friendly warning when a spend pushes a jar past 85% or over ---------- */
+  function jarUse(bucketId, exceptId) {
+    const m = curMonth();
+    return state.spends.filter((s) => s.bucketId === bucketId && s.id !== exceptId && (s.date || "").slice(0, 7) === m).reduce((a, s) => a + (Number(s.amount) || 0), 0);
+  }
+  function headsUp(b, before, amt, date) {
+    const lim = Number(b.limit) || 0, after = before + amt;
+    if (!(lim > 0) || before >= lim || date.slice(0, 7) !== curMonth()) return;
+    const dLeft = daysIn(curMonth()) - new Date().getDate();
+    const togo = dLeft > 0 ? `${dLeft} day${dLeft === 1 ? "" : "s"} to go` : "last day of the month";
+    let msg = "";
+    if (after > lim) msg = `${b.emoji || "🫙"} ${b.name} is over by ${money(after - lim)}. It happens! Maybe borrow from another jar?`;
+    else if (after >= lim * 0.85 && before < lim * 0.85) msg = `⚠️ Heads-up: ${b.emoji || "🫙"} ${b.name} is ${Math.round(after / lim * 100)}% used, ${togo}`;
+    if (msg) setTimeout(() => toast(msg, 4500), 1200);
+  }
+
+  /* ---------- prompts: reminder offer → Jar Wrap → due repeats, one at a time ---------- */
+  let dueDismissed = false;
+  function wrapDue() {
+    const prev = shiftMonth(curMonth(), -1);
+    if (new Date().getDate() > 10 || lsGet("lj-wrap-seen") === prev) return null;
+    return monthStats(prev).ms.length >= 3 ? prev : null;
+  }
+  function nextPrompt(from) {
+    setTimeout(() => {
+      if (sheet || tourActive || !state.loaded.buckets || !state.loaded.spends) return;
+      if (RM() && !lsGet("lj-reminder-asked") && from !== "remindAsk" && from !== "resume") return openSheet({ kind: "remindAsk" });
+      const wm = wrapDue(); if (wm) return openWrap(wm, true);
+      if (!state.readOnly && !dueDismissed && state.loaded.recurring && dueRepeats().length) return openSheet({ kind: "due" });
+    }, 350);
+  }
+  async function answerDue(id, add) {
+    const m = curMonth(), dim = daysIn(m);
+    const list = id === "all" ? dueRepeats().filter((r) => !(sheet.done || []).includes(r.id)) : state.recurring.filter((r) => r.id === id);
+    sheet.done = [...(sheet.done || []), ...list.map((r) => r.id)];
+    let added = 0;
+    for (const r of list) {
+      const ok = await write(async () => {
+        if (add) await store.add("spends", { bucketId: r.bucketId, amount: Number(r.amount) || 0, note: r.note || "", date: `${m}-${pad(Math.min(Number(r.day) || 1, dim))}`, createdAt: Date.now(), repeat: r.id });
+        await store.update("recurring", r.id, { lastMonth: m });
+      });
+      if (ok && add) added += Number(r.amount) || 0;
+    }
+    if (add && added) { chaChing(); toast(`Added ${money(added)} 🔁`); }
+    else if (!add) toast("Skipped for this month");
+    if (dueRepeats().some((r) => !sheet.done.includes(r.id))) renderSheet();
+    else closeSheet();
+  }
+
+  /* ---------- Jar Wrap: a recap of a finished month ---------- */
+  function openWrap(month, auto) {
+    if (auto) lsSet("lj-wrap-seen", month);
+    lsSet("lj-wrap-opened", "1");
+    openSheet({ kind: "wrap", month, confetti: true });
+    checkStickers();
+  }
+  function wrapData(m) {
+    const st = monthStats(m), jars = st.buckets.filter((b) => (Number(b.limit) || 0) > 0);
+    const top = [...st.buckets].sort((a, b) => (st.by[b.id] || 0) - (st.by[a.id] || 0))[0];
+    const leftFrac = (b) => 1 - (st.by[b.id] || 0) / b.limit;
+    const hero = [...jars].sort((a, b) => leftFrac(b) - leftFrac(a))[0];
+    const heroPct = hero ? Math.max(0, Math.round((1 - (st.by[hero.id] || 0) / hero.limit) * 100)) : 0;
+    const under = jars.filter((b) => (st.by[b.id] || 0) <= b.limit).length;
+    const pct = st.limit > 0 ? Math.round(Math.abs(st.left) / st.limit * 100) : 0;
+    return {
+      ...st, monthShort: monthName(m).split(" ")[0], count: st.ms.length, days: new Set(st.ms.map((s) => s.date)).size,
+      top: top && st.by[top.id] ? top : null, topSpent: top ? st.by[top.id] || 0 : 0,
+      hero: hero && heroPct > 0 ? hero : null, heroPct, under, jarCount: jars.length, pct,
+      biggest: [...st.ms].sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))[0],
+      headline: st.limit > 0 ? (st.left >= 0 ? `You kept ${pct}% of your budget in the jars! 🎉` : `A spendy month: ${pct}% over. Fresh jars now 💪`) : "Here's how your month went ✨",
+      cheer: jars.length && under === jars.length ? "Every single jar. Legendary! 🏆" : under * 2 >= jars.length ? "More than half. Nice work! ✨" : "New month, fresh start 🌱",
+    };
+  }
+  const confettiBits = () => Array.from({ length: 28 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:var(--j${i % 8});--drift:${(Math.random() * 80 - 40).toFixed(0)}px;animation-delay:${(Math.random() * .5).toFixed(2)}s"></i>`).join("");
+  // The shareable picture: percentages and counts only, never amounts.
+  async function wrapImage(m) {
+    const w = wrapData(m), cs = getComputedStyle(document.documentElement), v = (n) => cs.getPropertyValue(n).trim();
+    const c = document.createElement("canvas"); c.width = 1080; c.height = 1350;
+    const x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, v("--accent")); g.addColorStop(1, v("--j4"));
+    x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+    x.fillStyle = v("--surface"); x.beginPath(); x.roundRect(70, 230, 940, 960, 48); x.fill();
+    const disp = v("--font-display"), body = v("--font-body");
+    const text = (t, y, size, color, font = disp, weight = 600) => {
+      let s = size; x.font = `${weight} ${s}px ${font}`;
+      while (x.measureText(t).width > 860 && s > 20) { s -= 2; x.font = `${weight} ${s}px ${font}`; }
+      x.fillStyle = color; x.textAlign = "center"; x.fillText(t, 540, y);
+    };
+    text(`🎁 My ${w.monthShort} Jar Wrap`, 150, 72, "#FFFFFF");
+    text(w.limit > 0 ? (w.left >= 0 ? `Kept ${w.pct}% of my budget` : `Went ${w.pct}% over budget`) : "A month of jars", 360, 76, w.left >= 0 ? v("--ink") : v("--danger"));
+    const lines = [
+      [`${w.count} spends logged on ${w.days} days`, "✍️"],
+      w.top ? [`Busiest jar: ${w.top.emoji || "🫙"} ${w.top.name}`, ""] : null,
+      w.hero ? [`Jar hero: ${w.hero.emoji || "🫙"} ${w.hero.name} (${w.heroPct}% left)`, ""] : null,
+      w.jarCount ? [`${w.under} of ${w.jarCount} jars stayed under their limit`, "🎯"] : null,
+      rhythm() >= 2 ? [`${rhythm()}-week logging rhythm`, "🎵"] : null,
+    ].filter(Boolean);
+    lines.forEach(([t, e], i) => text(`${e ? e + " " : ""}${t}`, 500 + i * 120, 46, v("--ink"), body, 600));
+    text(w.cheer, 1120, 40, v("--muted"), body, 600);
+    const icon = document.querySelector(".brand-mark");
+    try { if (icon && icon.complete) x.drawImage(icon, 340, 1230, 64, 64); } catch {}
+    x.font = `600 44px ${disp}`; x.fillStyle = "#FFFFFF"; x.textAlign = "left"; x.fillText("Little Jars", 424, 1278);
+    return c;
+  }
+  async function shareWrap(m) {
+    try {
+      const c = await wrapImage(m), name = `little-jars-wrap-${m}.png`, text = "My month in Little Jars 🫙";
+      if (JT()) { await JT().shareImage({ base64: c.toDataURL("image/png").split(",")[1], filename: name, text }); return; }
+      const blob = await new Promise((r) => c.toBlob(r, "image/png"));
+      const file = new File([blob], name, { type: "image/png" });
+      if (!IN_CLAUDE && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], text }); } catch (e) { if (e && e.name !== "AbortError") throw e; }
+        return;
+      }
+      if (await saveFile(name, "image/png", blob)) toast("Picture saved 🎁");
+    } catch { toast("Couldn't make the picture. Try again?"); }
+  }
+
+  /* ---------- your data: backup, restore, CSV ---------- */
+  // Saves a file: Android asks where (Downloads, Drive…), the iPhone share sheet offers "Save to Files",
+  // claude.ai hands it to your browser, and other browsers download it.
+  async function saveFile(name, mime, data) {
+    try {
+      if (JT()) {
+        const isBlob = data instanceof Blob;
+        const payload = isBlob ? await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(",")[1]); fr.readAsDataURL(data); }) : data;
+        const r = await JT().saveFile({ filename: name, mime, data: payload, base64: isBlob });
+        return !!(r && r.saved);
+      }
+      if (IN_CLAUDE) {
+        const dl = await window.claude.use("downloads");
+        if (!dl) { toast("Saving files isn't available on this page."); return false; }
+        try { await dl.save({ filename: name, data }); return true; }
+        catch (e) { if (e && e.code === "declined") return false; throw e; }
+      }
+      const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
+      const file = new File([blob], name, { type: mime });
+      if (window.matchMedia("(pointer: coarse)").matches && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file] }); return true; } catch (e) { return false; }
+      }
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      return true;
+    } catch { toast("Couldn't save the file."); return false; }
+  }
+  async function backup() {
+    const data = JSON.stringify({ app: "little-jars", kind: "backup", format: 1, appVersion: APP_VERSION, exportedAt: new Date().toISOString(), currency: currency.code, buckets: state.buckets, spends: state.spends, recurring: state.recurring });
+    if (await saveFile(`little-jars-backup-${todayStr()}.json`, "application/json", data)) {
+      lsSet("lj-backup-at", String(Date.now())); mirrorSoon();
+      toast("Backup saved 💾");
+      checkStickers();
+      if (sheet && sheet.kind === "settings") renderSheet();
+    }
+  }
+  async function pickRestore() {
+    if (JT()) {
+      try { const r = await JT().openFile({ mime: "*/*" }); if (r && r.data) restoreFrom(r.data); } catch { toast("Couldn't open that file."); }
+      return;
+    }
+    $("restoreFile").click();
+  }
+  const okId = (s) => typeof s === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(s);
+  const isDay = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const num = (n, max = MAX_AMOUNT) => { n = Number(n); return isFinite(n) ? Math.min(Math.max(n, 0), max) : 0; };
+  const str = (s, n) => String(s ?? "").slice(0, n);
+  async function restoreFrom(text) {
+    let b;
+    try { b = JSON.parse(text); } catch {}
+    if (!b || b.app !== "little-jars" || !Array.isArray(b.buckets) || !Array.isArray(b.spends)) return toast("That doesn't look like a Little Jars backup.");
+    const buckets = b.buckets.filter((x) => x && okId(x.id) && x.name).map((x) => [x.id, { name: str(x.name, 40), limit: num(x.limit), emoji: str(x.emoji || "🫙", 8), color: num(x.color, 99) | 0, order: num(x.order, 1e6), fill: str(x.fill || "surprise", 12), createdAt: num(x.createdAt, 1e14) }]);
+    const ids = new Set(buckets.map(([id]) => id));
+    const spends = b.spends.filter((x) => x && okId(x.id) && ids.has(x.bucketId) && isDay(x.date)).map((x) => [x.id, { bucketId: x.bucketId, amount: num(x.amount), note: str(x.note, 80), date: x.date, createdAt: num(x.createdAt, 1e14), ...(okId(x.repeat) ? { repeat: x.repeat } : {}) }]);
+    const recurring = (Array.isArray(b.recurring) ? b.recurring : []).filter((x) => x && okId(x.id) && ids.has(x.bucketId)).map((x) => [x.id, { bucketId: x.bucketId, amount: num(x.amount), note: str(x.note, 80), day: Math.min(31, Math.max(1, num(x.day, 31) | 0)), lastMonth: str(x.lastMonth, 7), createdAt: num(x.createdAt, 1e14) }]);
+    const when = b.exportedAt ? new Date(b.exportedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "an earlier day";
+    const ok = await ask({ title: "Restore this backup?", text: `From ${esc(when)}: <b>${buckets.length} jar${buckets.length === 1 ? "" : "s"}</b> and <b>${spends.length} spend${spends.length === 1 ? "" : "s"}</b>. This replaces the ${state.buckets.length} jars and ${state.spends.length} spends here.`, yes: "Restore", no: "Cancel" });
+    if (!ok) return;
+    if (sheet) closeSheet();
+    toast("Restoring…");
+    const old = { recurring: [...state.recurring], spends: [...state.spends], buckets: [...state.buckets] };
+    const done = await write(async () => {
+      for (const col of ["recurring", "spends", "buckets"]) for (const x of old[col]) await store.remove(col, x.id);
+      for (const [id, v] of buckets) await store.put("buckets", id, v);
+      for (const [id, v] of spends) await store.put("spends", id, v);
+      for (const [id, v] of recurring) await store.put("recurring", id, v);
+    });
+    if (!done) return;
+    if (b.currency && CURRENCIES.some((c) => c[0] === b.currency)) { setCurrencyCode(b.currency); prefs.currency = currency.code; savePrefs(); }
+    state.month = curMonth(); render();
+    toast(`Restored ${buckets.length} jars and ${spends.length} spends 🎉`);
+  }
+  async function exportCsv() {
+    const bmap = Object.fromEntries(state.buckets.map((b) => [b.id, b]));
+    const q = (v) => { const s = String(v ?? ""); return /[",\n\r]/.test(s) || /^[=+\-@]/.test(s) ? `"${s.replace(/^([=+\-@])/, "'$1").replace(/"/g, '""')}"` : s; };
+    const rows = [...state.spends].sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.createdAt || 0) - (b.createdAt || 0))
+      .map((s) => [s.date, bmap[s.bucketId] ? bmap[s.bucketId].name : "Deleted jar", s.note || "", (Number(s.amount) || 0).toFixed(currency.digits), currency.code].map(q).join(","));
+    const csv = "﻿" + ["Date,Jar,Note,Amount,Currency", ...rows].join("\r\n");
+    if (await saveFile(`little-jars-spends-${todayStr()}.csv`, "text/csv", csv)) toast(`Exported ${rows.length} spend${rows.length === 1 ? "" : "s"} 📊`);
+  }
+
+  /* ---------- rate us: asked once in a while, at a happy moment, only in the Android app ---------- */
+  function happyMoment() {
+    if (!JT() || lsGet("lj-rate") === "done") return;
+    const first = Number(lsGet("lj-first-use")) || Date.now(), last = Number(lsGet("lj-rate-asked")) || 0, times = Number(lsGet("lj-rate-times")) || 0;
+    const day = 864e5;
+    if (Date.now() - first < 7 * day || state.spends.length < 10 || Date.now() - last < 60 * day || times >= 3) return;
+    setTimeout(() => {
+      if (sheet || tourActive || drawer.open) return;
+      lsSet("lj-rate-asked", String(Date.now())); lsSet("lj-rate-times", String(times + 1));
+      openSheet({ kind: "rate" });
+    }, 2600);
   }
 
   /* ---------- reordering jars: long-press and drag, or the Earlier/Later buttons ---------- */
@@ -1342,9 +1959,16 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
   /* ---------- toasts ---------- */
   let toastTimer;
-  function toast(msg) {
+  const toastQueue = [];
+  function toast(msg, ms = 2600) {
     const el = $("toast"); el.textContent = msg; el.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.hidden = true), 2600);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; if (toastQueue.length) setTimeout(() => { if (el.hidden && toastQueue.length) toast(...toastQueue.shift()); }, 300); }, ms);
+  }
+  // Waits for the current toast to finish (so a sticker never hides a jar heads-up).
+  function toastLater(msg, ms) {
+    toastQueue.push([msg, ms]);
+    if ($("toast").hidden) toast(...toastQueue.shift());
   }
 
   /* ---------- first-run tour ---------- */
@@ -1385,7 +2009,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       const nb = document.querySelector('[data-tour="next"]'); if (nb) nb.focus();
     }, 260));
   }
-  function endTour() { tourActive = false; $("tourRoot").innerHTML = ""; window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); afterOnboarding("tour"); }
+  function endTour() { tourActive = false; $("tourRoot").innerHTML = ""; window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); nextPrompt("tour"); }
   $("tourRoot").addEventListener("click", (e) => {
     const b = e.target.closest("[data-tour]"); if (!b) return;
     if (b.dataset.tour === "skip") return endTour();
@@ -1393,19 +2017,14 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   });
   window.addEventListener("resize", () => { if (tourActive) showTourStep(); });
 
-  /* ---------- onboarding flow: intro → tour (new) or what's new (update) → reminder offer ---------- */
-  function afterOnboarding(from) {
-    if (RM() && !lsGet("lj-reminder-asked") && from !== "remindAsk" && !sheet && !tourActive) {
-      setTimeout(() => { if (!sheet && !tourActive) openSheet({ kind: "remindAsk" }); }, 350);
-    }
-  }
+  /* ---------- onboarding flow: intro → tour (new) or what's new (update) → reminder offer, wrap, repeats ---------- */
   async function runOnboarding() {
     await dataReady;
     if (sheet || tourActive) return;
     const isNew = !lsGet("lj-tour-done") && !state.buckets.length && !state.spends.length;
     if (isNew) return startTour();
     if (lsGet("lj-seen-version") !== APP_VERSION) { lsSet("lj-seen-version", APP_VERSION); lsSet("lj-tour-done", "1"); return openSheet({ kind: "whatsnew" }); }
-    afterOnboarding("start");
+    nextPrompt("start");
   }
   function playIntro() {
     const el = $("intro");
@@ -1419,8 +2038,10 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
   /* ---------- boot ---------- */
   async function boot() {
+    const restored = await restoreMirror();
     loadLocalPrefs();
-    setTheme(prefs.theme);
+    if (!lsGet("lj-first-use")) lsSet("lj-first-use", String(Date.now()));
+    applySkin();
     if ("serviceWorker" in navigator && location.protocol === "https:" && !IS_NATIVE && document.querySelector('link[rel="manifest"]')) {
       navigator.serviceWorker.register("sw.js").catch(() => {});
     }
@@ -1438,15 +2059,18 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       try { const user = await window.claude.use("user"); if (user && user.can && (await user.can("data.write")) === false) state.readOnly = true; } catch {}
     }
     const markLoaded = () => { if (state.loaded.buckets && state.loaded.spends) dataReadyResolve(); };
-    store.subscribe("buckets", (docs) => { state.buckets = docs; state.loaded.buckets = true; render(); markLoaded(); });
-    store.subscribe("spends", (docs) => { state.spends = docs; state.loaded.spends = true; render(); markLoaded(); });
+    store.subscribe("buckets", (docs) => { state.buckets = docs; state.loaded.buckets = true; render(); markLoaded(); dataChanged(); });
+    store.subscribe("spends", (docs) => { state.spends = docs; state.loaded.spends = true; render(); markLoaded(); dataChanged(); });
+    store.subscribe("recurring", (docs) => { state.recurring = docs; state.loaded.recurring = true; dataChanged(); if (sheet && ["recurring", "settings"].includes(sheet.kind)) renderSheet(); });
     if (store.watchPrefs) store.watchPrefs((p) => {
       if (p.theme && p.theme !== currentTheme()) { setTheme(p.theme); lsSet("budget-jars-theme", p.theme); }
       if (p.currency && p.currency !== currency.code) { setCurrencyCode(p.currency); prefs.currency = currency.code; lsSet("budget-jars-currency", currency.code); }
       if (typeof p.sound === "boolean") { prefs.sound = p.sound; lsSet("lj-sound", p.sound ? "on" : "off"); }
+      if (typeof p.festive === "boolean" && p.festive !== prefs.festive) { prefs.festive = p.festive; lsSet("lj-festive", p.festive ? "on" : "off"); applySkin(); }
       render(); if (sheet && sheet.kind === "settings") renderSheet();
     });
     await introDone;
+    if (restored) toast("Welcome back! Your jars came along to this phone 📲", 4000);
     await runOnboarding();
     dataReady.then(() => syncReminder());
     handleReminderTap();

@@ -1,5 +1,5 @@
 // Offline cache for the web version. Bump VERSION whenever app files change.
-const VERSION = "little-jars-v1.1.0";
+const VERSION = "little-jars-v1.2.0";
 const FILES = [
   "./", "index.html", "privacy.html", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
