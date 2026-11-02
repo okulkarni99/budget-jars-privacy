@@ -310,6 +310,10 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .drawer.left { right: auto; left: 0; transform: translateX(-105%); box-shadow: 20px 0 50px rgba(0,0,0,.25); padding-right: 0; padding-left: env(safe-area-inset-left, 0px); }
 .drawer.left.open { transform: none; }
 .month .month-label { width: auto; height: auto; flex: 1; font-size: 1.1rem; padding: 8px 4px; }
+/* Until the months drawer has been opened once, a soft pulsing dot hints that the month is tappable. */
+.month { position: relative; }
+.month.fresh::after { content: ""; position: absolute; top: 6px; right: 46px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: hintPulse 1.8s ease-in-out infinite; pointer-events: none; }
+@keyframes hintPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 60% { box-shadow: 0 0 0 7px transparent; } }
 .month-label .caret { font-size: .7rem; color: var(--muted); }
 /* Months drawer: chart, tips and a row per month */
 .m-body { overflow: auto; flex: 1; padding: 4px 16px 24px; display: grid; gap: 16px; align-content: start; }
@@ -361,7 +365,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .x { border: 0; background: var(--bg); width: 36px; height: 36px; border-radius: 999px; font-size: 1.1rem; flex: none; }
 label.f, .f { display: grid; gap: 6px; font-weight: 600; font-size: .9rem; }
 input.t, select.t, textarea.t {
-  font: inherit; color: var(--ink); background: var(--bg); border: 2px solid transparent; border-radius: 14px;
+  font: inherit; color: var(--ink); background: var(--bg); border: 2px solid var(--line); border-radius: 14px;
   padding: 12px 14px; width: 100%; font-weight: 500;
 }
 textarea.t { min-height: 120px; resize: vertical; }
@@ -562,10 +566,17 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 .home-opt[aria-pressed="true"]::after { content: "✓"; position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: .75rem; font-weight: 800; display: grid; place-items: center; }
 .home-prev { display: block; width: 100%; height: 74px; pointer-events: none; }
 .home-prev svg { width: 100%; height: 100%; filter: none; }
+.kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kind-opt { display: grid; gap: 2px; justify-items: start; text-align: left; border: 2px solid var(--line); background: var(--surface); border-radius: 16px; padding: 12px; }
+.kind-opt span { font-size: 1.5rem; }
+.kind-opt b { font-family: var(--font-display); font-weight: 600; }
+.kind-opt small { color: var(--muted); font-size: .78rem; line-height: 1.3; }
+.kind-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.pill.good { background: color-mix(in srgb, var(--good) 22%, var(--surface)); color: var(--ink); }
 .rate-faces { font-size: 2.6rem; text-align: center; letter-spacing: .1em; }
 
 @media (prefers-reduced-motion: reduce) {
-  .jar-art .wave, #snow, .tour-arrow { animation: none !important; }
+  .jar-art .wave, #snow, .tour-arrow, .month.fresh::after { animation: none !important; }
   .jar-art .liquid, .drawer, .jar { transition: none; }
   .sheet.anim, .dialog, .confetti { animation: none; }
   .confetti { display: none; }
@@ -633,12 +644,14 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
 <script>
 (() => {
-  const APP_VERSION = "1.2.0";
+  const APP_VERSION = "1.3.0";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
-                  "📈","💹","🏦","💰","🪙","💵","🐷","💳","🎓","🧾","🏖️","❤️"];
+                  "📈","💹","🏦","💰","🪙","💵","🐷","💳","🎓","🧾","🏖️","❤️","📺","🔧","🛡️"];
   const PRESETS = [["Groceries","🛒"],["Eating out","🍜"],["Coffee","☕"],["Gas","⛽"],["Shopping","🛍️"],["Fun","🎉"],["Home","🏠"],["Pets","🐾"],["Investing","📈"],["Savings","🐷"]];
+  const SAVE_PRESETS = [["Car insurance","🚗"],["Property tax","🏠"],["Vacation","✈️"],["Gifts","🎁"],["Subscriptions","📺"],["Car repairs","🔧"]];
+  const EVERY = [["3", "Every 3 months"], ["6", "Every 6 months"], ["12", "Yearly"], ["once", "Just once"]];
   const FILLS = [["liquid","Liquid","💧"],["candy","Candy","🍬"],["kisses","Chocolate kisses","🍫"],["cash","Cash","💵"],["coins","Coins","🪙"]];
   const COLORS = 8;
   const THEMES = [
@@ -1005,8 +1018,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   // The mid-month check-in (the 15th, late morning) carries a line about this month, refreshed whenever
   // the jars change. If the app hasn't been opened this month, Android shows a generic line instead.
   function midText() {
-    const m = curMonth(), limit = state.buckets.reduce((a, b) => a + (Number(b.limit) || 0), 0);
-    const spent = state.spends.filter((s) => (s.date || "").slice(0, 7) === m && state.buckets.some((b) => b.id === s.bucketId)).reduce((a, s) => a + (Number(s.amount) || 0), 0);
+    const m = curMonth(), jars = state.buckets.filter((b) => !isSave(b));
+    const limit = jars.reduce((a, b) => a + effLimit(b, m), 0), spent = jars.reduce((a, b) => a + spentIn(b.id, m), 0);
     if (!(limit > 0)) return "";
     const pct = Math.round(spent / limit * 100);
     return pct <= 50 ? `Halfway through the month and you've used ${pct}% of your budget. Nicely done! 🌗`
@@ -1117,13 +1130,55 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (!first.length && snap && JSON.stringify(snap.limits || {}) === JSON.stringify(limits)) return;
     write(async () => { for (const pm of [...first, m]) await store.put("months", pm, { limits, savedAt: Date.now() }); });
   }
-  // Totals for one month, with that month's limits.
+  // Rollover: a spending jar can carry leftovers into next month (overspending comes out of it).
+  // Saving jars always carry over: they fill up each month toward a bill (insurance, taxes…).
+  const isSave = (b) => !!b && b.kind === "save";
+  const rolls = (b) => !!b && (b.kind === "save" || !!b.rollover);
+  const ymOf = (ts) => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+  let spentMemo = {}, spentMemoFor = null;
+  function spentIn(bid, ym) {
+    if (spentMemoFor !== state.spends) {
+      spentMemo = {}; spentMemoFor = state.spends;
+      state.spends.forEach((s) => { const k = s.bucketId + "|" + (s.date || "").slice(0, 7); spentMemo[k] = (spentMemo[k] || 0) + (Number(s.amount) || 0); });
+    }
+    return spentMemo[bid + "|" + ym] || 0;
+  }
+  function carryOf(b, ym = state.month) {
+    if (!rolls(b)) return 0;
+    const start = b.rolloverFrom || (b.createdAt ? ymOf(b.createdAt) : ym);
+    if (ym < start) return 0;
+    let carry = isSave(b) ? Number(b.start) || 0 : 0;
+    for (let m = start; m < ym; m = shiftMonth(m, 1)) carry += limitOf(b, m) - spentIn(b.id, m);
+    return carry;
+  }
+  // What a jar has to spend this month: its limit plus anything carried over.
+  const effLimit = (b, ym = state.month) => limitOf(b, ym) + carryOf(b, ym);
+  // A saving jar's balance: everything put aside so far, minus bills paid from it.
+  const savedIn = (b, ym = state.month) => effLimit(b, ym) - spentIn(b.id, ym);
+  function nextDue(b) {
+    if (!b.due || !/^\d{4}-\d{2}-\d{2}$/.test(b.due)) return null;
+    const today = parseDay(todayStr()), step = Number(b.every) || 0, base = parseDay(b.due);
+    let d = base, k = 0;
+    while (step && d < today && k < 600) { k++; d = new Date(base.getFullYear(), base.getMonth() + step * k, base.getDate()); }
+    return d;
+  }
+  const dueLabel = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const monthsUntil = (day) => { const [y, m] = day.split("-").map(Number), [cy, cm] = curMonth().split("-").map(Number); return Math.max(1, (y * 12 + m) - (cy * 12 + cm) + 1); };
+  // How full a jar looks: spending jars show what's left, saving jars how close they are to the bill.
+  function jarFrac(b, by) {
+    if (isSave(b)) { const g = Number(b.goal) || 0; return g > 0 ? Math.max(0, Math.min(1, savedIn(b) / g)) : 0; }
+    const lim = effLimit(b); return lim > 0 ? Math.max(0, Math.min(1, (lim - (by[b.id] || 0)) / lim)) : 0;
+  }
+  const jarOver = (b, by) => (isSave(b) ? savedIn(b) < 0 : effLimit(b) - (by[b.id] || 0) < 0);
+
+  // Totals for one month, with that month's limits. Saving jars keep their own score, so a big bill
+  // paid from one doesn't make that month look over budget.
   function monthStats(ym) {
-    const buckets = sortedBuckets(), ids = new Set(buckets.map((b) => b.id));
+    const buckets = sortedBuckets().filter((b) => !isSave(b)), ids = new Set(buckets.map((b) => b.id));
     const ms = state.spends.filter((s) => (s.date || "").slice(0, 7) === ym && ids.has(s.bucketId));
     const by = {};
     ms.forEach((s) => { by[s.bucketId] = (by[s.bucketId] || 0) + (Number(s.amount) || 0); });
-    const lims = Object.fromEntries(buckets.map((b) => [b.id, limitOf(b, ym)]));
+    const lims = Object.fromEntries(buckets.map((b) => [b.id, effLimit(b, ym)]));
     const limit = buckets.reduce((a, b) => a + lims[b.id], 0);
     const spent = ms.reduce((a, s) => a + (Number(s.amount) || 0), 0);
     return { ym, buckets, ms, by, lims, limit, spent, left: limit - spent };
@@ -1255,8 +1310,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   // or on a shelf (Settings → Theme → Where do your jars live?). Up to 10 jars are shown.
   const f1 = (n) => n.toFixed(1);
   function miniJar(b, by, cx, baseY, jw, rot, pre = "cj-") {
-    const jh = jw * 1.36, lim = limitOf(b), sp = by[b.id] || 0, over = lim - sp < 0;
-    const frac = lim > 0 ? Math.max(0, Math.min(1, (lim - sp) / lim)) : 0;
+    const jh = jw * 1.36, over = jarOver(b, by), frac = jarFrac(b, by);
     const id = pre + String(b.id).replace(/[^A-Za-z0-9_-]/g, ""), x = -jw / 2;
     return `<g class="cjar ${over ? "over" : ""}" style="--c:${bucketColor(b)}" transform="translate(${f1(cx)} ${f1(baseY)}) rotate(${f1(rot)})" data-open="${esc(b.id)}" role="button" aria-label="${esc(b.name)}">
         <defs><clipPath id="${id}"><rect x="${f1(x)}" y="${f1(-jh)}" width="${f1(jw)}" height="${f1(jh)}" rx="${f1(jw * .24)}"/></clipPath></defs>
@@ -1314,6 +1368,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   /* ---------- render ---------- */
   function render() {
     $("monthLabel").innerHTML = `${monthName(state.month)} <span class="caret" aria-hidden="true">▾</span>`;
+    document.querySelector(".month").classList.toggle("fresh", !lsGet("lj-months-seen"));
     const rr = rhythm();
     $("rhythmSlot").innerHTML = rr >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${rr}-week logging rhythm">🎵 ${rr}</button>` : "";
     $("nextMonth").disabled = state.month >= curMonth();
@@ -1321,9 +1376,10 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const buckets = sortedBuckets();
     const loading = !state.loaded.buckets || !state.loaded.spends;
 
-    const limit = buckets.reduce((a, b) => a + limitOf(b), 0);
-    const spent = buckets.reduce((a, b) => a + (by[b.id] || 0), 0);
-    const left = limit - spent;
+    const spendJars = buckets.filter((b) => !isSave(b)), saveJars = buckets.filter(isSave);
+    const limit = spendJars.reduce((a, b) => a + effLimit(b), 0);
+    const spent = spendJars.reduce((a, b) => a + (by[b.id] || 0), 0);
+    const left = limit - spent, putAside = saveJars.reduce((a, b) => a + Math.max(0, savedIn(b)), 0);
     let pace = "";
     if (state.month === curMonth() && limit > 0) {
       const dLeft = daysIn(state.month) - new Date().getDate() + 1;
@@ -1338,13 +1394,27 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         <div class="eyebrow">${left >= 0 ? "Left in all jars" : "Over budget by"}</div>
         <div class="big num">${money(Math.abs(left))}</div>
         ${limit > 0 ? `<div class="sticker-sub num">of ${money(limit)} · ${money(spent)} spent</div>` : ""}
+        ${saveJars.length ? `<div class="sticker-sub num">🏦 ${money(putAside)} put aside for bills</div>` : ""}
       </div>
       ${pace ? `<div class="pace">${pace}</div>` : ""}
       ${badgesLine()}`;
 
     $("jars").innerHTML = loading ? "" : buckets.map((b) => {
-      const sp = by[b.id] || 0, lim = limitOf(b), lf = lim - sp;
-      const frac = lim > 0 ? Math.max(0, Math.min(1, lf / lim)) : 0;
+      const frac = jarFrac(b, by);
+      if (isSave(b)) {
+        const bal = savedIn(b), goal = Number(b.goal) || 0, due = nextDue(b), soon = due && (due - parseDay(todayStr())) / 864e5 <= 14;
+        const pill = bal >= goal && goal > 0 ? `<span class="pill good">Ready 🎉</span>` : soon ? `<span class="pill warn">Due soon</span>` : `<span class="pill">Saving</span>`;
+        return `<button class="jar save ${bal < 0 ? "over" : ""}" style="--c:${bucketColor(b)}" data-open="${esc(b.id)}" data-id="${esc(b.id)}" aria-label="${esc(b.name)}: ${money(bal)} saved of ${money(goal)}">
+          ${pill}
+          <div class="jar-art">
+            ${jarArt(b.id, frac, b.emoji || "🫙", fillOf(b))}
+            <div class="jar-label num"><small>saved</small>${bal < 0 ? "−" + money(-bal) : money(bal)}</div>
+          </div>
+          <div class="jar-name">${esc(b.name)}</div>
+          <div class="jar-sub num">of ${money(goal)}${due ? ` · ${dueLabel(due)}` : ""}</div>
+        </button>`;
+      }
+      const sp = by[b.id] || 0, lim = effLimit(b), lf = lim - sp, carry = carryOf(b);
       const used = lim > 0 ? sp / lim : 0;
       const pill = lf < 0 ? `<span class="pill bad">Over</span>` : used >= 0.85 ? `<span class="pill warn">Almost out</span>` : "";
       return `<button class="jar ${lf < 0 ? "over" : ""}" style="--c:${bucketColor(b)}" data-open="${esc(b.id)}" data-id="${esc(b.id)}" aria-label="${esc(b.name)}: ${lf < 0 ? money(-lf) + " over" : money(lf) + " left"} of ${money(lim)}">
@@ -1354,7 +1424,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
           <div class="jar-label num"><small>${lf < 0 ? "over" : "left"}</small>${lf < 0 ? "−" + money(-lf) : money(lf)}</div>
         </div>
         <div class="jar-name">${esc(b.name)}</div>
-        <div class="jar-sub num">of ${money(lim)}</div>
+        <div class="jar-sub num">of ${money(limitOf(b))}${carry ? ` ${carry > 0 ? "+" : "−"} ${money(Math.abs(carry))} 🔄` : ""}</div>
       </button>`;
     }).join("") + (loading || state.readOnly ? "" : `<button class="jar add" data-new-bucket><span>+</span><span>${buckets.length ? "New jar" : "Make your first jar"}</span></button>`);
     pourJars();
@@ -1423,6 +1493,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (monthsOpen) return;
     if (drawer.open) closeDrawer();
     monthsOpen = true; pushLayer("months"); renderMonths();
+    if (!lsGet("lj-months-seen")) { lsSet("lj-months-seen", "1"); document.querySelector(".month").classList.remove("fresh"); }
     $("drawerScrim").hidden = false;
     requestAnimationFrame(() => { $("monthsDrawer").classList.add("open"); $("monthsDrawer").setAttribute("aria-hidden", "false"); });
   }
@@ -1443,7 +1514,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     let hidden = {}; try { hidden = JSON.parse(lsGet("lj-tips-hidden") || "{}") || {}; } catch {}
     const tips = [];
     sortedBuckets().forEach((b) => {
-      const L = Number(b.limit) || 0; if (!(L > 0) || hidden[b.id] === curMonth()) return;
+      const L = Number(b.limit) || 0; if (!(L > 0) || rolls(b) || hidden[b.id] === curMonth()) return;
       const sp = stats.map((st) => st.by[b.id] || 0), lims = stats.map((st) => st.lims[b.id]);
       if (sp.filter((x) => x > 0).length < 2) return;
       const over = sp.filter((x, i) => x > lims[i]).length, max = Math.max(...sp), avg = sp.reduce((a, x) => a + x, 0) / 3;
@@ -1539,6 +1610,18 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (was === "wrap") happyMoment();
   }
 
+  // Saving jar: suggest a monthly amount that has the bill covered by its due date.
+  function suggestAside(d) {
+    const goal = evalAmount(d.goal || ""), start = evalAmount(d.start || "") || 0;
+    if (!(goal > 0) || !d.due) return null;
+    return Math.max(0, Math.ceil((goal - start) / monthsUntil(d.due)));
+  }
+  function saveHint(d) {
+    const s = suggestAside(d);
+    if (s === null) return "Tell us the bill and when it's due, and we'll work out how much to put aside each month.";
+    const due = parseDay(d.due);
+    return s === 0 ? "You've already saved enough for this one. 🎉" : `Put aside <b>${esc(money(s))} a month</b> and it'll be ready by ${esc(dueLabel(due))}.`;
+  }
   function renderSheet(anim) {
     if (!sheet) return;
     let html = "";
@@ -1565,13 +1648,30 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         </form>`;
     } else if (sheet.kind === "bucket") {
       const b = sheet.draft, buckets = sortedBuckets(), idx = sheet.id ? buckets.findIndex((x) => x.id === sheet.id) : -1;
+      const save = b.kind === "save", money$ = (id, val, ph) => `<div class="amount-wrap"><span style="font-size:1.1rem;left:14px">${esc(currency.symbol)}</span><input class="t num" id="${id}" inputmode="decimal" placeholder="${ph}" style="padding-left:${18 + currency.symbol.length * 11}px" value="${esc(val)}"></div>`;
       html = `<div class="sheet-head"><h3>${sheet.id ? "Edit jar" : "New jar"}</h3><button class="x" data-close aria-label="Close">×</button></div>
         <form id="bucketForm" style="display:grid;gap:16px" novalidate>
-          ${sheet.id ? "" : `<div class="chips">${PRESETS.filter(([n]) => !state.buckets.some((x) => x.name.toLowerCase() === n.toLowerCase())).map(([n, e]) => `<button type="button" class="chip" data-preset="${esc(n)}|${e}">${e} ${esc(n)}</button>`).join("")}</div>`}
-          <div class="two">
-            <label class="f">Name <input class="t" id="bkName" maxlength="40" placeholder="Groceries" value="${esc(b.name)}" autofocus></label>
-            <label class="f">Monthly limit <div class="amount-wrap"><span style="font-size:1.1rem;left:14px">${esc(currency.symbol)}</span><input class="t num" id="bkLimit" inputmode="decimal" placeholder="600" style="padding-left:${18 + currency.symbol.length * 11}px" value="${esc(b.limit)}"></div></label>
+          <div class="kinds">
+            <button type="button" class="kind-opt" data-kind="spend" aria-pressed="${!save}"><span aria-hidden="true">🫙</span><b>Spending jar</b><small>Empties as you spend, fresh each month</small></button>
+            <button type="button" class="kind-opt" data-kind="save" aria-pressed="${save}"><span aria-hidden="true">🏦</span><b>Saving jar</b><small>Fills up for bills every few months</small></button>
           </div>
+          ${sheet.id ? "" : `<div class="chips">${(save ? SAVE_PRESETS : PRESETS).filter(([n]) => !state.buckets.some((x) => x.name.toLowerCase() === n.toLowerCase())).map(([n, e]) => `<button type="button" class="chip" data-preset="${esc(n)}|${e}">${e} ${esc(n)}</button>`).join("")}</div>`}
+          ${save ? `<label class="f">What's it for? <input class="t" id="bkName" maxlength="40" placeholder="Car insurance" value="${esc(b.name)}" autofocus></label>
+          <div class="two">
+            <label class="f">Bill amount ${money$("bkGoal", b.goal, "600")}</label>
+            <label class="f">Next due <input class="t" id="bkDue" type="date" value="${esc(b.due || "")}"></label>
+          </div>
+          <div class="f">How often?<div class="chips">${EVERY.map(([v, label]) => `<button type="button" class="chip" data-every="${v}" aria-pressed="${(b.every || "3") === v}">${label}</button>`).join("")}</div></div>
+          <div class="two">
+            <label class="f">Put aside each month ${money$("bkLimit", b.limit, "200")}</label>
+            <label class="f">Already saved <span class="row-meta" style="display:inline;font-weight:500">(optional)</span> ${money$("bkStart", b.start, "0")}</label>
+          </div>
+          <div class="row-meta" id="bkHint">${saveHint(b)}</div>`
+          : `<div class="two">
+            <label class="f">Name <input class="t" id="bkName" maxlength="40" placeholder="Groceries" value="${esc(b.name)}" autofocus></label>
+            <label class="f">Monthly limit ${money$("bkLimit", b.limit, "600")}</label>
+          </div>
+          <div class="set-row"><span>🔄 Roll over leftovers<small>Unspent money carries into next month (and overspending comes out of it). Great for Gifts or Fun money.</small></span><span class="switch"><input type="checkbox" id="bkRoll" aria-label="Roll over leftovers" ${b.rollover ? "checked" : ""}><i></i></span></div>`}
           <div class="f">Icon
             <div class="emojis">${EMOJIS.map((e) => `<button type="button" data-emoji="${e}" aria-pressed="${b.emoji === e}" aria-label="${e}">${e}</button>`).join("")}</div>
           </div>
@@ -1647,16 +1747,12 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         </form>`;
     } else if (sheet.kind === "whatsnew") {
       const items = [
-        ["✏️", "Oops, typo? Tap any spend to <b>edit</b> it."],
-        ["🔁", "<b>Monthly repeats</b> for rent, bills and subscriptions. We'll ask before adding them, so nothing sneaks in."],
-        ["💾", "<b>Back up</b> your jars to a file, <b>restore</b> them anywhere, or export a <b>CSV</b> for spreadsheets. Settings → Your data."],
-        ...(JT() ? [["📲", "Getting a new phone? Android's own backup now brings your jars along."]] : []),
-        ["🎁", "<b>Jar Wrap</b>: a cute recap of last month, ready to share (without the amounts)."],
-        ["🏅", "<b>Jar stickers</b> to collect, and a <b>weekly rhythm</b> that counts the weeks you log. Miss a day? No stress."],
-        ["⚠️", "Jars now give you a heads-up when they're almost empty."],
-        ...(RM() ? [["🌗", "A <b>mid-month check-in</b> on the 15th: how your jars are doing so far."]] : []),
-        ["💵", "Cash jars now print your own currency on the bills."],
-        ["🪔", "New <b>Diwali</b> and <b>Thanksgiving</b> themes, and <b>Festive mode</b> dresses your jars up on the right days, all by itself."],
+        ["📅", "Tap the <b>month</b> at the top to see all your months, a spending chart, and tips to fine-tune your jars."],
+        ["🏦", "<b>Saving jars</b> for bills that come every few months, like insurance. They fill up a little each month, so the bill never stings."],
+        ["🔄", "<b>Roll over leftovers</b>: turn it on for any jar and unspent money carries into next month."],
+        ["📦", "Your jars now live in a <b>crate</b> or on a <b>shelf</b>. Pick in Settings → Theme."],
+        ["🧹", "A calmer home screen, and Settings tidied into sections."],
+        ["👆", "Swipe down to close pop-ups, and swipe right to close Expenses."],
       ];
       html = `<div class="sheet-head"><h3>Psst… we've been busy ✨</h3><button class="x" data-close aria-label="Close">×</button></div>
         <ul class="news">${items.map(([e, t]) => `<li><span aria-hidden="true">${e}</span><div>${t}</div></li>`).join("")}</ul>
@@ -1721,15 +1817,19 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       const b = state.buckets.find((x) => x.id === sheet.id);
       if (!b) { closeSheet(); return; }
       const { ms, by } = totals();
-      const sp = by[b.id] || 0, lim = limitOf(b), lf = lim - sp;
+      const sp = by[b.id] || 0, lim = effLimit(b), lf = lim - sp, carry = carryOf(b);
+      const bal = savedIn(b), goal = Number(b.goal) || 0, due = isSave(b) && nextDue(b);
       const list = ms.filter((s) => s.bucketId === b.id).sort((a, c) => (c.date || "").localeCompare(a.date || "") || (c.createdAt || 0) - (a.createdAt || 0));
       const all = state.spends.filter((s) => s.bucketId === b.id).length;
       html = `<div class="sheet-head"><h3>${esc(b.emoji || "🫙")} ${esc(b.name)}</h3><button class="x" data-close aria-label="Close">×</button></div>
         <div class="detail-top" style="--c:${bucketColor(b)}">
           <div class="eyebrow">${monthName(state.month)}</div>
-          <div class="big num ${lf < 0 ? "over" : ""}" style="font-size:2.4rem;${lf < 0 ? "color:var(--danger)" : ""}">${lf < 0 ? money(-lf) + " over" : money(lf) + " left"}</div>
+          ${isSave(b) ? `<div class="big num" style="font-size:2.4rem;${bal < 0 ? "color:var(--danger)" : ""}">${money(bal)} saved</div>
+          <div class="bar"><i style="width:${goal > 0 ? Math.max(0, Math.min(100, bal / goal * 100)) : 0}%"></i></div>
+          <div class="pace num" style="text-align:left">of ${money(goal)}${due ? ` · due ${dueLabel(due)}` : ""} · putting aside ${money(limitOf(b))} a month${bal >= goal && goal > 0 ? ". It's ready! When you pay the bill, log it here as a spend." : ""}</div>`
+          : `<div class="big num ${lf < 0 ? "over" : ""}" style="font-size:2.4rem;${lf < 0 ? "color:var(--danger)" : ""}">${lf < 0 ? money(-lf) + " over" : money(lf) + " left"}</div>
           <div class="bar"><i style="width:${lim > 0 ? Math.min(100, sp / lim * 100) : 0}%"></i></div>
-          <div class="pace num" style="text-align:left">${money(sp)} spent of ${money(lim)}</div>
+          <div class="pace num" style="text-align:left">${money(sp)} spent of ${money(lim)}${carry ? ` (${money(limitOf(b))} ${carry > 0 ? "+" : "−"} ${money(Math.abs(carry))} carried over 🔄)` : ""}</div>`}
         </div>
         <div class="detail-list">${list.length ? list.map((s) => spendRow(s, b)).join("") : `<div class="empty">Nothing spent from this jar in ${monthName(state.month).split(" ")[0]}.</div>`}</div>
         ${(() => { const reps = state.recurring.filter((r) => r.bucketId === b.id); return reps.length ? `<div class="set-row"><span>🔁 Repeats monthly<small>${reps.map((r) => `${esc(r.note || b.name)} · ${esc(money(Number(r.amount) || 0))} on the ${ordinal(Number(r.day) || 1)}`).join("<br>")}</small></span><button class="link-btn" data-recurring>Manage</button></div>` : ""; })()}
@@ -1748,6 +1848,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   document.addEventListener("input", (e) => {
     if (!sheet) return;
     const t = e.target;
+    if (t.id === "bkGoal" || t.id === "bkStart") {
+      const c = cleanAmount(t.value); if (c !== t.value) t.value = c;
+      sheet.draft[t.id === "bkGoal" ? "goal" : "start"] = c; refreshAside();
+    }
+    if (t.id === "bkDue") { sheet.draft.due = t.value; refreshAside(); }
     if (t.id === "spAmount" || t.id === "bkLimit") {
       const c = cleanAmount(t.value);
       if (c !== t.value) { const pos = Math.max(0, (t.selectionStart || 0) - (t.value.length - c.length)); t.value = c; try { t.setSelectionRange(pos, pos); } catch {} }
@@ -1755,7 +1860,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         sheet.amount = c;
         const v = evalAmount(c), calc = $("amtCalc");
         if (calc) calc.textContent = hasOps(c) && isFinite(v) ? "= " + money(v) : "";
-      } else sheet.draft.limit = c;
+      } else { sheet.draft.limit = c; sheet.draft.limitTouched = true; }
     }
     if (t.id === "spNote") sheet.note = t.value;
     if (t.id === "spDate") sheet.date = t.value;
@@ -1763,6 +1868,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.id === "ftIdea") sheet.idea = t.value;
     if (t.id === "ftName") sheet.name = t.value;
   });
+  function refreshAside() {
+    const d = sheet.draft, s = suggestAside(d);
+    if (s !== null && !d.limitTouched) { d.limit = String(s); const el = $("bkLimit"); if (el) el.value = d.limit; }
+    const h = $("bkHint"); if (h) h.innerHTML = saveHint(d);
+  }
   // + and − buttons insert into the amount without closing the phone keyboard.
   document.addEventListener("pointerdown", (e) => {
     const b = e.target.closest("[data-op]"); if (!b) return;
@@ -1780,6 +1890,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.id === "soundToggle") { prefs.sound = t.checked; savePrefs(); if (prefs.sound) chaChing(); }
     if (t.id === "remToggle") { if (t.checked) enableReminder(); else { prefs.reminder.on = false; savePrefs(); syncReminder(); } renderSheet(); }
     if (t.id === "spRepeat") { sheet.repeat = t.checked; renderSheet(); }
+    if (t.id === "bkRoll") sheet.draft.rollover = t.checked;
     if (t.id === "festiveToggle") { prefs.festive = t.checked; if (t.checked) lsSet("lj-festive-skip", ""); savePrefs(); applySkin(); renderSheet(); }
     if (t.id === "midToggle") { if (t.checked) enableMid(); else { prefs.mid = false; savePrefs(); syncReminder(); } }
     if (t.id === "restoreFile" && t.files && t.files[0]) { const f = t.files[0]; t.value = ""; f.text().then(restoreFrom, () => toast("Couldn't read that file.")); }
@@ -1817,6 +1928,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.dataset.emoji) { sheet.draft.emoji = t.dataset.emoji; return renderSheet(); }
     if (t.dataset.color) { sheet.draft.color = Number(t.dataset.color); return renderSheet(); }
     if (t.dataset.fill) { sheet.draft.fill = t.dataset.fill; return renderSheet(); }
+    if (t.dataset.kind) { sheet.draft.kind = t.dataset.kind; sheet.error = ""; if (t.dataset.kind === "save" && !sheet.draft.emoji) sheet.draft.emoji = "🚗"; return renderSheet(); }
+    if (t.dataset.every) { sheet.draft.every = t.dataset.every; return renderSheet(); }
     if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; sheet.error = ""; return renderSheet(); }
     if (t.dataset.move) { await moveBucket(sheet.id, Number(t.dataset.move)); return renderSheet(); }
     if (t.dataset.acc) { sheet.open = sheet.open === t.dataset.acc ? null : t.dataset.acc; return renderSheet(); }
@@ -1896,14 +2009,19 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       happyMoment();
     }
     if (e.target.id === "bucketForm") {
-      const d = sheet.draft, name = (d.name || "").trim(), lim = evalAmount(d.limit || "");
+      const d = sheet.draft, name = (d.name || "").trim(), lim = evalAmount(d.limit || ""), save = d.kind === "save";
       if (!name) { sheet.error = "Give this jar a name."; return renderSheet(); }
       const dup = state.buckets.find((x) => x.id !== sheet.id && x.name.trim().toLowerCase() === name.toLowerCase());
       if (dup) { await ask({ title: "That jar already exists 🫙", text: `You already have a <b>${esc(dup.emoji || "🫙")} ${esc(dup.name)}</b> jar. Try a different name, or add spends to that one.`, yes: "Got it", no: "Cancel", danger: false }); return; }
-      if (!(lim >= 0)) { sheet.error = "Enter a monthly limit, like 300."; return renderSheet(); }
-      if (lim > MAX_AMOUNT) { sheet.error = `That's more than ${money(MAX_AMOUNT)}. Try a smaller limit.`; return renderSheet(); }
-      const data = { name, limit: lim, emoji: d.emoji || "🫙", color: d.color ?? 0, fill: d.fill || "surprise" };
-      const id = sheet.id;
+      const goal = evalAmount(d.goal || ""), start = evalAmount(d.start || "") || 0;
+      if (save && !(goal > 0)) { sheet.error = "How much is the bill? For example 600."; return renderSheet(); }
+      if (save && !/^\d{4}-\d{2}-\d{2}$/.test(d.due || "")) { sheet.error = "When is the bill due next?"; return renderSheet(); }
+      if (!(lim >= 0)) { sheet.error = save ? "How much should go in each month? For example 200." : "Enter a monthly limit, like 300."; return renderSheet(); }
+      if (lim > MAX_AMOUNT || goal > MAX_AMOUNT || start > MAX_AMOUNT) { sheet.error = `That's more than ${money(MAX_AMOUNT)}. Try a smaller amount.`; return renderSheet(); }
+      const id = sheet.id, old = id && state.buckets.find((x) => x.id === id);
+      const data = { name, limit: lim, emoji: d.emoji || "🫙", color: d.color ?? 0, fill: d.fill || "surprise", kind: save ? "save" : "spend" };
+      if (save) Object.assign(data, { goal, due: d.due, every: d.every || "3", start, rollover: false, rolloverFrom: isSave(old) && old.rolloverFrom ? old.rolloverFrom : curMonth() });
+      else Object.assign(data, { rollover: !!d.rollover, rolloverFrom: d.rollover ? (old && old.rollover && old.rolloverFrom) || curMonth() : null });
       closeSheet();
       if (id) await write(() => store.update("buckets", id, data), `Saved ${name}`);
       else await write(() => store.add("buckets", { ...data, order: state.buckets.reduce((m, b) => Math.max(m, b.order ?? 0), 0) + 1, createdAt: Date.now() }), `Created ${name}`);
@@ -1936,7 +2054,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const b = id && state.buckets.find((x) => x.id === id);
     const used = new Set(state.buckets.map((x) => x.color));
     let free = 0; while (used.has(free) && free < COLORS - 1) free++;
-    openSheet({ kind: "bucket", id: id || null, draft: b ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0, fill: b.fill || "surprise" } : { name: "", limit: "", emoji: "🛒", color: free, fill: "surprise" } });
+    openSheet({ kind: "bucket", id: id || null, draft: b
+      ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0, fill: b.fill || "surprise", kind: b.kind || "spend", rollover: !!b.rollover, goal: b.goal ? String(b.goal) : "", due: b.due || "", every: b.every || "3", start: b.start ? String(b.start) : "", limitTouched: true }
+      : { name: "", limit: "", emoji: "🛒", color: free, fill: "surprise", kind: "spend", rollover: false, goal: "", due: "", every: "3", start: "" } });
   }
 
   function openEditSpend(id) {
@@ -1951,7 +2071,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     return state.spends.filter((s) => s.bucketId === bucketId && s.id !== exceptId && (s.date || "").slice(0, 7) === m).reduce((a, s) => a + (Number(s.amount) || 0), 0);
   }
   function headsUp(b, before, amt, date) {
-    const lim = Number(b.limit) || 0, after = before + amt;
+    if (isSave(b)) return;
+    const lim = effLimit(b, curMonth()), after = before + amt;
     if (!(lim > 0) || before >= lim || date.slice(0, 7) !== curMonth()) return;
     const dLeft = daysIn(curMonth()) - new Date().getDate();
     const togo = dLeft > 0 ? `${dLeft} day${dLeft === 1 ? "" : "s"} to go` : "last day of the month";
@@ -2114,7 +2235,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     let b;
     try { b = JSON.parse(text); } catch {}
     if (!b || b.app !== "little-jars" || !Array.isArray(b.buckets) || !Array.isArray(b.spends)) return toast("That doesn't look like a Little Jars backup.");
-    const buckets = b.buckets.filter((x) => x && okId(x.id) && x.name).map((x) => [x.id, { name: str(x.name, 40), limit: num(x.limit), emoji: str(x.emoji || "🫙", 8), color: num(x.color, 99) | 0, order: num(x.order, 1e6), fill: str(x.fill || "surprise", 12), createdAt: num(x.createdAt, 1e14) }]);
+    const buckets = b.buckets.filter((x) => x && okId(x.id) && x.name).map((x) => [x.id, { name: str(x.name, 40), limit: num(x.limit), emoji: str(x.emoji || "🫙", 8), color: num(x.color, 99) | 0, order: num(x.order, 1e6), fill: str(x.fill || "surprise", 12), createdAt: num(x.createdAt, 1e14),
+      kind: x.kind === "save" ? "save" : "spend", rollover: !!x.rollover, rolloverFrom: /^\d{4}-\d{2}$/.test(x.rolloverFrom || "") ? x.rolloverFrom : null,
+      ...(x.kind === "save" ? { goal: num(x.goal), due: isDay(x.due) ? x.due : "", every: ["3", "6", "12", "once"].includes(x.every) ? x.every : "3", start: num(x.start) } : {}) }]);
     const ids = new Set(buckets.map(([id]) => id));
     const spends = b.spends.filter((x) => x && okId(x.id) && ids.has(x.bucketId) && isDay(x.date)).map((x) => [x.id, { bucketId: x.bucketId, amount: num(x.amount), note: str(x.note, 80), date: x.date, createdAt: num(x.createdAt, 1e14), ...(okId(x.repeat) ? { repeat: x.repeat } : {}) }]);
     const recurring = (Array.isArray(b.recurring) ? b.recurring : []).filter((x) => x && okId(x.id) && ids.has(x.bucketId)).map((x) => [x.id, { bucketId: x.bucketId, amount: num(x.amount), note: str(x.note, 80), day: Math.min(31, Math.max(1, num(x.day, 31) | 0)), lastMonth: str(x.lastMonth, 7), createdAt: num(x.createdAt, 1e14) }]);
@@ -2292,10 +2415,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   let tourStep = 0, tourSteps = [], tourActive = false;
   function startTour() {
     tourSteps = [
-      { sel: ".jarbox", title: "Your crate of jars 📦", text: "Every jar you make sits in this crate, filled to what's left. The label shows what's left this month across all of them." },
+      { sel: ".jarbox", title: "All your jars 📦", text: "Every jar you make shows up here in miniature, filled to what's left. The label shows what's left this month across all of them." },
       state.buckets.length
         ? { sel: ".jar[data-id]", title: "Your jars 🫙", text: "Each jar has a monthly limit and drains as you spend. Tap one for details. Hold and drag to move it." }
         : { sel: ".jar.add", title: "Make your first jar 🫙", text: "Start here: create a jar like Groceries and give it a monthly limit." },
+      { sel: "#monthLabel", title: "Your months 📅", text: "Tap the month to see every month you've tracked, a spending chart, and tips for your jars." },
       { sel: "#fab", title: "Log a spend ✍️", text: "Tap here whenever you spend. Tip: type 12+10 and we'll add it up for you." },
       { sel: "#clipTab", title: "Your expenses 📎", text: "Tug the paper clip to see everything you've spent this month." },
       { sel: "#settingsBtn", title: "Make it yours ⚙️", text: "Themes, currency, sounds, reminders and feature requests live here." },
