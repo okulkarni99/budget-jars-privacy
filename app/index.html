@@ -131,19 +131,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, .jar:focus-vi
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
 
 /* Header */
-.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.brand { font-size: 1.5rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
-.brand-mark { width: 32px; height: 32px; border-radius: 9px; display: block; }
+.top { display: grid; gap: 12px; }
+.top-bar { display: flex; align-items: center; gap: 8px; }
+/* The app name is a quiet label; the month and your jars are the stars. */
+.brand { font-size: 1.02rem; letter-spacing: .01em; display: flex; align-items: center; gap: 8px; margin-right: auto; opacity: .62; }
+.brand-mark { width: 24px; height: 24px; border-radius: 7px; display: block; }
 :root[data-skin="holiday"] .brand::after { content: "🎄"; font-size: 1.2rem; }
 :root[data-skin="diwali"] .brand::after { content: "🪔"; font-size: 1.2rem; }
 :root[data-skin="thanksgiving"] .brand::after { content: "🦃"; font-size: 1.2rem; }
 .top-actions { display: flex; align-items: center; gap: 8px; }
-.month { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+.month { display: flex; align-items: center; justify-content: space-between; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; width: 100%; max-width: 360px; margin: 0 auto; }
 .month button { border: 0; background: transparent; width: 36px; height: 36px; border-radius: 999px; font-size: 1.1rem; }
 .month button:hover:not(:disabled) { background: var(--bg); }
 .month button:disabled { opacity: .3; cursor: default; }
-.month-label { min-width: 130px; text-align: center; font-weight: 600; }
-.icon-btn { border: 1px solid var(--line); background: var(--surface); width: 46px; height: 46px; border-radius: 999px; font-size: 1.25rem; display: grid; place-items: center; }
+.month-label { flex: 1; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); width: 42px; height: 42px; border-radius: 999px; font-size: 1.25rem; display: grid; place-items: center; }
 
 /* Summary: a box of new mason jars seen from the top, one lid per jar, with a taped-on label. */
 .summary { display: grid; gap: 10px; }
@@ -165,6 +167,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .jarbox .b-print { fill: var(--box-print); font-family: var(--font-display); font-weight: 700; }
 .jarbox { max-width: 400px; }
 .jarbox .b-front { fill: var(--box); }
+.jarbox .s-plank { fill: var(--box); }
+.jarbox .s-edge, .jarbox .s-bracket { fill: var(--box-wall); }
 .jarbox .b-post { fill: var(--box-flap); }
 .jarbox .b-plank { stroke: var(--box-wall); stroke-width: 2; }
 .jarbox .b-grain { fill: none; stroke: var(--box-wall); stroke-width: 1.2; opacity: .45; }
@@ -178,7 +182,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .cjar .c-shine { fill: #FFFFFF; opacity: .55; }
 .cjar .c-neck { fill: color-mix(in srgb, var(--c) 30%, var(--surface)); }
 .cjar .c-lid { fill: color-mix(in srgb, var(--c) 60%, #222); }
-.rhythm-chip { position: absolute; top: 0; right: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-weight: 700; font-size: .9rem; box-shadow: var(--shadow); }
+.rhythm-chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; height: 42px; padding: 0 14px; font-weight: 700; font-size: .95rem; }
 .box-sticker .sticker-sub { font-size: .8rem; font-weight: 600; color: #7A6650; margin-top: 1px; }
 .pace b { color: var(--ink); }
 .lid-g { cursor: pointer; }
@@ -513,6 +517,25 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 .sticker small { color: var(--muted); font-size: .72rem; line-height: 1.25; }
 .sticker.got span { filter: drop-shadow(0 2px 3px rgba(0,0,0,.2)); animation: pop .3s ease-out; }
 .sticker:not(.got) span { filter: grayscale(1); opacity: .35; }
+/* Settings sections: tap to open, tap again to close. */
+.accs { display: grid; gap: 8px; }
+.acc { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.acc-head { width: 100%; border: 0; background: none; display: flex; align-items: center; gap: 12px; padding: 14px; text-align: left; }
+.acc-head b { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.acc-icon { font-size: 1.3rem; width: 26px; text-align: center; }
+.acc-sum { margin-left: auto; color: var(--muted); font-size: .86rem; font-weight: 600; text-align: right; }
+.acc-chev { color: var(--muted); font-size: 1.3rem; line-height: 1; transition: transform .2s ease; }
+.acc.open .acc-chev { transform: rotate(90deg); }
+.acc-body { display: grid; gap: 12px; padding: 0 14px 16px; animation: accIn .2s ease-out; }
+@keyframes accIn { from { opacity: 0; transform: translateY(-4px); } }
+.acc-body .set-row, .acc-body .btn:not(.primary), .acc-body input.t, .acc-body select.t { background: var(--surface); }
+.homes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.home-opt { position: relative; display: grid; gap: 6px; justify-items: center; border: 2px solid transparent; background: var(--surface); border-radius: 16px; padding: 10px 8px 8px; }
+.home-opt b { font-family: var(--font-display); font-weight: 600; font-size: .92rem; }
+.home-opt[aria-pressed="true"] { border-color: var(--accent); }
+.home-opt[aria-pressed="true"]::after { content: "✓"; position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: .75rem; font-weight: 800; display: grid; place-items: center; }
+.home-prev { display: block; width: 100%; height: 74px; pointer-events: none; }
+.home-prev svg { width: 100%; height: 100%; filter: none; }
 .rate-faces { font-size: 2.6rem; text-align: center; letter-spacing: .1em; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -527,14 +550,15 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 <body>
 <div class="wrap">
   <header class="top">
-    <h1 class="brand"><img class="brand-mark" src="icons/icon-192.png" alt="" width="32" height="32">Little Jars</h1>
-    <div class="top-actions">
-      <div class="month" role="group" aria-label="Month">
-        <button id="prevMonth" aria-label="Previous month">‹</button>
-        <div class="month-label" id="monthLabel"></div>
-        <button id="nextMonth" aria-label="Next month">›</button>
-      </div>
+    <div class="top-bar">
+      <h1 class="brand"><img class="brand-mark" src="icons/icon-192.png" alt="" width="32" height="32">Little Jars</h1>
+      <span id="rhythmSlot"></span>
       <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
+    </div>
+    <div class="month" role="group" aria-label="Month">
+      <button id="prevMonth" aria-label="Previous month">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button id="nextMonth" aria-label="Next month">›</button>
     </div>
   </header>
 
@@ -718,7 +742,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
   /* ---------- state ---------- */
   const state = { buckets: [], spends: [], recurring: [], loaded: { buckets: false, spends: false, recurring: false }, month: curMonth(), readOnly: false };
-  const prefs = { theme: "auto", currency: "USD", sound: true, festive: true, reminder: { on: false, time: "21:00" }, mid: true };
+  const prefs = { theme: "auto", display: "crate", currency: "USD", sound: true, festive: true, reminder: { on: false, time: "21:00" }, mid: true };
   let store = null;
   let sheet = null;
   let drawer = { open: false, filter: "all" };
@@ -822,6 +846,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     prefs.sound = lsGet("lj-sound") !== "off";
     try { const r = JSON.parse(lsGet("lj-reminder") || "null"); if (r && typeof r.on === "boolean") prefs.reminder = { on: r.on, time: r.time || "21:00" }; } catch {}
     prefs.festive = lsGet("lj-festive") !== "off";
+    prefs.display = lsGet("lj-display") === "shelf" ? "shelf" : "crate";
     prefs.mid = lsGet("lj-mid") !== "off";
     setCurrencyCode(prefs.currency);
   }
@@ -830,10 +855,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     lsSet("budget-jars-currency", prefs.currency);
     lsSet("lj-sound", prefs.sound ? "on" : "off");
     lsSet("lj-festive", prefs.festive ? "on" : "off");
+    lsSet("lj-display", prefs.display);
     lsSet("lj-reminder", JSON.stringify(prefs.reminder));
     lsSet("lj-mid", prefs.mid ? "on" : "off");
     mirrorSoon();
-    if (store && store.savePrefs && !state.readOnly) write(() => store.savePrefs({ theme: prefs.theme, currency: prefs.currency, sound: prefs.sound, festive: prefs.festive }));
+    if (store && store.savePrefs && !state.readOnly) write(() => store.savePrefs({ theme: prefs.theme, display: prefs.display, currency: prefs.currency, sound: prefs.sound, festive: prefs.festive }));
   }
 
   // Festive mode: which occasion (if any) is on right now. Each has an id so picking another theme
@@ -1181,54 +1207,71 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   }
 
   /* ---------- the box of jars, seen from the top ---------- */
-  // A wooden crate seen from the front, with a mini jar for each budget jar poking out the top,
-  // filled to what's left. Up to 5 jars stand in one row; more get a second row behind.
-  function crateView(buckets, by) {
-    const show = buckets.slice(0, 10), W = 320, H = 168;
-    const fx = 34, fy = 98, fw = 240, fh = 62, dx = 24, dy = 14;
-    const back = show.length > 5 ? show.slice(0, Math.ceil(show.length / 2)) : [];
-    const front = show.slice(back.length);
-    const jar = (b, cx, baseY, jw, rot) => {
-      const jh = jw * 1.36, lim = Number(b.limit) || 0, sp = by[b.id] || 0, over = lim - sp < 0;
-      const frac = lim > 0 ? Math.max(0, Math.min(1, (lim - sp) / lim)) : 0;
-      const id = "cj-" + String(b.id).replace(/[^A-Za-z0-9_-]/g, ""), f = (n) => n.toFixed(1), x = -jw / 2;
-      return `<g class="cjar ${over ? "over" : ""}" style="--c:${bucketColor(b)}" transform="translate(${f(cx)} ${f(baseY)}) rotate(${f(rot)})" data-open="${esc(b.id)}" role="button" aria-label="${esc(b.name)}">
-        <defs><clipPath id="${id}"><rect x="${f(x)}" y="${f(-jh)}" width="${f(jw)}" height="${f(jh)}" rx="${f(jw * .24)}"/></clipPath></defs>
-        <rect class="c-glass" x="${f(x)}" y="${f(-jh)}" width="${f(jw)}" height="${f(jh)}" rx="${f(jw * .24)}"/>
-        <g clip-path="url(#${id})"><rect class="c-fill" x="${f(x)}" y="${f(-jh * frac)}" width="${f(jw)}" height="${f(jh * frac + 2)}"/></g>
-        <rect class="c-edge" x="${f(x)}" y="${f(-jh)}" width="${f(jw)}" height="${f(jh)}" rx="${f(jw * .24)}"/>
-        <rect class="c-shine" x="${f(x + jw * .14)}" y="${f(-jh * .82)}" width="${f(jw * .1)}" height="${f(jh * .38)}" rx="2"/>
-        <rect class="c-neck" x="${f(-jw * .36)}" y="${f(-jh - 5)}" width="${f(jw * .72)}" height="6" rx="2"/>
-        <rect class="c-lid" x="${f(-jw * .42)}" y="${f(-jh - 13)}" width="${f(jw * .84)}" height="10" rx="3.5"/>
-        <text x="0" y="${f(-jh * .6)}" font-size="${f(jw * .42)}" text-anchor="middle" dominant-baseline="middle">${esc(b.emoji || "🫙")}</text>
+  // Your jars in miniature on the home screen, each filled to what's left. They live in a crate
+  // or on a shelf (Settings → Theme → Where do your jars live?). Up to 10 jars are shown.
+  const f1 = (n) => n.toFixed(1);
+  function miniJar(b, by, cx, baseY, jw, rot, pre = "cj-") {
+    const jh = jw * 1.36, lim = Number(b.limit) || 0, sp = by[b.id] || 0, over = lim - sp < 0;
+    const frac = lim > 0 ? Math.max(0, Math.min(1, (lim - sp) / lim)) : 0;
+    const id = pre + String(b.id).replace(/[^A-Za-z0-9_-]/g, ""), x = -jw / 2;
+    return `<g class="cjar ${over ? "over" : ""}" style="--c:${bucketColor(b)}" transform="translate(${f1(cx)} ${f1(baseY)}) rotate(${f1(rot)})" data-open="${esc(b.id)}" role="button" aria-label="${esc(b.name)}">
+        <defs><clipPath id="${id}"><rect x="${f1(x)}" y="${f1(-jh)}" width="${f1(jw)}" height="${f1(jh)}" rx="${f1(jw * .24)}"/></clipPath></defs>
+        <rect class="c-glass" x="${f1(x)}" y="${f1(-jh)}" width="${f1(jw)}" height="${f1(jh)}" rx="${f1(jw * .24)}"/>
+        <g clip-path="url(#${id})"><rect class="c-fill" x="${f1(x)}" y="${f1(-jh * frac)}" width="${f1(jw)}" height="${f1(jh * frac + 2)}"/></g>
+        <rect class="c-edge" x="${f1(x)}" y="${f1(-jh)}" width="${f1(jw)}" height="${f1(jh)}" rx="${f1(jw * .24)}"/>
+        <rect class="c-shine" x="${f1(x + jw * .14)}" y="${f1(-jh * .82)}" width="${f1(jw * .1)}" height="${f1(jh * .38)}" rx="2"/>
+        <rect class="c-neck" x="${f1(-jw * .36)}" y="${f1(-jh - 5)}" width="${f1(jw * .72)}" height="6" rx="2"/>
+        <rect class="c-lid" x="${f1(-jw * .42)}" y="${f1(-jh - 13)}" width="${f1(jw * .84)}" height="10" rx="3.5"/>
+        <text x="0" y="${f1(-jh * .6)}" font-size="${f1(jw * .42)}" text-anchor="middle" dominant-baseline="middle">${esc(b.emoji || "🫙")}</text>
       </g>`;
-    };
-    const row = (list, baseY, shift, jwMax, tilt) => list.map((b, i) => {
-      const slot = (fw - 16) / list.length, jw = Math.min(jwMax, slot * .86);
-      const rot = (((hash(b.id) % 13) - 6) * tilt);
-      return jar(b, fx + 8 + shift + slot * (i + .5), baseY, jw, rot);
-    }).join("");
-    const jars = row(back, fy - 12, dx * .55, 42, .9) + row(front, fy + 16, 0, 54, 1.2);
-    const empty = show.length ? "" : `<text class="b-print" x="${fx + fw / 2 + dx / 2}" y="${fy - 2}" font-size="13" text-anchor="middle">Your jars go here</text>`;
-    return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
-        <polygon class="b-inside" points="${fx},${fy} ${fx + dx},${fy - dy} ${fx + fw + dx},${fy - dy} ${fx + fw},${fy}"/>
+  }
+  const tilt = (b, k) => ((hash(b.id) % 13) - 6) * k;
+  const jarHome = (buckets, by) => (prefs.display === "shelf" ? shelfView : crateView)(buckets.slice(0, 10), by);
+  // A wooden crate, front view, jars poking out the top at playful angles. With more than 5 jars,
+  // the extras stand behind, raised and set in the gaps between the front jars.
+  function crateView(show, by, pre) {
+    const back = show.length > 5 ? show.slice(0, show.length - Math.ceil((show.length + 1) / 2)) : [];
+    const front = show.slice(back.length);
+    const fx = 30, fy = back.length ? 116 : 84, fw = 260, fh = 62, H = fy + fh + 6;
+    const slot = (fw - 16) / Math.max(1, front.length), gapOff = (front.length - 1 - back.length) / 2;
+    const jars = back.map((b, i) => miniJar(b, by, fx + 8 + slot * (i + 1 + gapOff), fy - 30, Math.min(42, slot * .8), tilt(b, .9), pre)).join("")
+      + front.map((b, i) => miniJar(b, by, fx + 8 + slot * (i + .5), fy + 16, Math.min(54, slot * .86), tilt(b, 1.2), pre)).join("");
+    const empty = show.length ? "" : `<text class="b-print" x="${fx + fw / 2}" y="${fy - 8}" font-size="13" text-anchor="middle">Your jars go here</text>`;
+    return `<svg viewBox="0 0 320 ${H}" aria-hidden="true">
         ${empty}${jars}
-        <polygon class="b-wall" points="${fx + fw},${fy} ${fx + fw + dx},${fy - dy} ${fx + fw + dx},${fy + fh - dy} ${fx + fw},${fy + fh}"/>
-        <rect class="b-front" x="${fx}" y="${fy}" width="${fw}" height="${fh}" rx="3"/>
-        <line class="b-plank" x1="${fx}" y1="${fy + fh / 3}" x2="${fx + fw}" y2="${fy + fh / 3}"/>
-        <line class="b-plank" x1="${fx}" y1="${fy + fh * 2 / 3}" x2="${fx + fw}" y2="${fy + fh * 2 / 3}"/>
-        <path class="b-grain" d="M${fx + 30} ${fy + 10} q30 -4 60 0 t60 0 M${fx + 60} ${fy + 31} q40 5 80 0 M${fx + 24} ${fy + 52} q50 -5 100 0 t70 0"/>
-        <rect class="b-post" x="${fx}" y="${fy}" width="12" height="${fh}" rx="2"/>
-        <rect class="b-post" x="${fx + fw - 12}" y="${fy}" width="12" height="${fh}" rx="2"/>
-        <rect class="b-hole" x="${fx + fw + 6}" y="${fy + 8}" width="${dx - 12}" height="9" rx="4" transform="skewY(-30)" transform-origin="${fx + fw + dx / 2} ${fy + 14}"/>
+        <rect class="b-inside" x="${fx}" y="${fy}" width="${fw}" height="${fh}" rx="4"/>
+        <rect class="b-front" x="${fx}" y="${fy}" width="${fw}" height="${fh * .48}" rx="3"/>
+        <rect class="b-front" x="${fx}" y="${fy + fh * .54}" width="${fw}" height="${fh * .46}" rx="3"/>
+        <path class="b-grain" d="M${fx + 30} ${fy + 12} q30 -4 60 0 t60 0 t50 0 M${fx + 40} ${fy + 50} q40 5 80 0 t70 0"/>
+        <rect class="b-post" x="${fx}" y="${fy}" width="14" height="${fh}" rx="3"/>
+        <rect class="b-post" x="${fx + fw - 14}" y="${fy}" width="14" height="${fh}" rx="3"/>
+        <rect class="b-hole" x="${fx + fw / 2 - 22}" y="${fy + 7}" width="44" height="10" rx="5"/>
         <rect class="b-ribbon" x="${fx + fw / 2 - 9}" y="${fy}" width="18" height="${fh}"/>
-        ${[[6, 7], [6, fh - 7], [fw - 6, 7], [fw - 6, fh - 7]].map(([x, y]) => `<circle class="b-nail" cx="${fx + x}" cy="${fy + y}" r="1.6"/>`).join("")}
+        ${[[7, 7], [7, fh - 7], [fw - 7, 7], [fw - 7, fh - 7]].map(([x, y]) => `<circle class="b-nail" cx="${fx + x}" cy="${fy + y}" r="1.8"/>`).join("")}
       </svg>`;
+  }
+  // A wall shelf with little brackets; the whole jar shows. More than 5 jars get a second shelf.
+  function shelfView(show, by, pre) {
+    const fx = 26, fw = 268, half = Math.ceil(show.length / 2);
+    const rows = show.length > 5 ? [show.slice(0, half), show.slice(half)] : [show];
+    let out = "", y = 0;
+    rows.forEach((list) => {
+      const slot = (fw - 24) / Math.max(1, list.length), jw = Math.min(52, slot * .78);
+      y += jw * 1.36 + 22;
+      out += list.map((b, i) => miniJar(b, by, fx + 12 + slot * (i + .5), y, jw, tilt(b, .5), pre)).join("");
+      if (!list.length) out += `<text class="b-print" x="160" y="${f1(y - 20)}" font-size="13" text-anchor="middle">Your jars go here</text>`;
+      out += `<rect class="s-plank" x="${fx}" y="${f1(y)}" width="${fw}" height="9" rx="2"/><rect class="s-edge" x="${fx}" y="${f1(y + 7)}" width="${fw}" height="5" rx="2"/>
+        <path class="s-bracket" d="M${fx + 34} ${f1(y + 12)} h12 l-12 16 z M${fx + fw - 34} ${f1(y + 12)} h-12 l12 16 z"/>`;
+      y += 26;
+    });
+    return `<svg viewBox="0 0 320 ${f1(y + 4)}" aria-hidden="true">${out}</svg>`;
   }
 
   /* ---------- render ---------- */
   function render() {
     $("monthLabel").textContent = monthName(state.month);
+    const rr = rhythm();
+    $("rhythmSlot").innerHTML = rr >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${rr}-week logging rhythm">🎵 ${rr}</button>` : "";
     $("nextMonth").disabled = state.month >= curMonth();
     const { ms, by } = totals();
     const buckets = sortedBuckets();
@@ -1245,10 +1288,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     } else if (state.month < curMonth() && limit > 0) {
       pace = left >= 0 ? `Finished ${money(left)} under budget` : `Finished ${money(-left)} over budget`;
     }
-    const r = rhythm();
     $("summary").innerHTML = loading ? `<div class="eyebrow" style="text-align:center">Loading your budget…</div>` : `
-      <div class="jarbox">${crateView(buckets, by)}
-        ${r >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${r}-week logging rhythm">🎵${r}</button>` : ""}</div>
+      <div class="jarbox">${jarHome(buckets, by)}</div>
       <div class="box-sticker ${left < 0 ? "over" : ""}">
         <div class="eyebrow">${left >= 0 ? "Left in all jars" : "Over budget by"}</div>
         <div class="big num">${money(Math.abs(left))}</div>
@@ -1424,42 +1465,50 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     } else if (sheet.kind === "settings") {
       const ln = !!RM(), f = prefs.festive && festiveNow(), fa = activeFestive();
       const nRep = state.recurring.length, lastBackup = lsGet("lj-backup-at");
+      const th = THEMES.find((t) => t.id === prefs.theme) || THEMES[0];
       let saved = {}; try { saved = JSON.parse(lsGet("lj-stickers") || "{}") || {}; } catch {}
+      const nStk = Object.keys(saved).length;
+      // A preview of the crate and the shelf, using your own jars (or sample ones).
+      const sample = sortedBuckets().slice(0, 4), { by } = totals();
+      const demo = sample.length ? sample : [0, 1, 2, 3].map((i) => ({ id: "demo" + i, name: "", emoji: ["🛒", "🍜", "☕", "🐷"][i], limit: 100, color: i }));
+      const demoBy = sample.length ? by : { demo0: 30, demo1: 60, demo2: 10, demo3: 80 };
+      // Settings are grouped into sections; tap a section to open it, tap again to close.
+      const section = (id, icon, title, summary, body) => `<div class="acc ${sheet.open === id ? "open" : ""}">
+          <button class="acc-head" data-acc="${id}" aria-expanded="${sheet.open === id}"><span class="acc-icon" aria-hidden="true">${icon}</span><b>${title}</b><span class="acc-sum">${summary}</span><span class="acc-chev" aria-hidden="true">›</span></button>
+          ${sheet.open === id ? `<div class="acc-body">${body}</div>` : ""}
+        </div>`;
       html = `<div class="sheet-head"><h3>Settings</h3><button class="x" data-close aria-label="Close">×</button></div>
-        <div class="f">Theme
-          <div class="themes">${THEMES.map((th) => `<button class="theme-opt" data-pick-theme="${th.id}" aria-pressed="${prefs.theme === th.id}" aria-label="${th.name}: ${th.desc}" title="${th.desc}" style="--t0:${th.sw[0]};--t1:${th.sw[1]};--t2:${th.sw[2]}">
-            <span class="theme-chip" aria-hidden="true"><span>${th.e}</span><i></i><i></i></span><b>${th.name}</b>
+        <div class="accs">
+        ${section("look", "🎨", "Theme", `${th.e} ${th.name}`, `
+          <div class="themes">${THEMES.map((t) => `<button class="theme-opt" data-pick-theme="${t.id}" aria-pressed="${prefs.theme === t.id}" aria-label="${t.name}: ${t.desc}" title="${t.desc}" style="--t0:${t.sw[0]};--t1:${t.sw[1]};--t2:${t.sw[2]}">
+            <span class="theme-chip" aria-hidden="true"><span>${t.e}</span><i></i><i></i></span><b>${t.name}</b>
           </button>`).join("")}</div>
-        </div>
-        <div class="set-row"><span>🎉 Festive mode<small>${fa ? `Showing the ${esc(THEMES.find((t) => t.id === fa.skin).name)} theme for ${esc(fa.name)}, until ${fa.until.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : f ? `Taking a break for ${esc(f.name)} since you picked a theme` : "Dresses up for Diwali, Thanksgiving and the holidays, then switches back"}</small></span><span class="switch"><input type="checkbox" id="festiveToggle" aria-label="Festive mode" ${prefs.festive ? "checked" : ""}><i></i></span></div>
-        <label class="f">Currency
-          <select class="t" id="curSel">${CURRENCIES.map(([code, name]) => `<option value="${code}" ${code === currency.code ? "selected" : ""}>${code} · ${name}</option>`).join("")}</select>
-          <span class="row-meta" style="font-weight:400">Example: ${esc(money(1234.5))}. Changing currency relabels your amounts; it doesn't convert them.</span>
-        </label>
-        <div class="set-row"><span>🔔 Cha-ching sound<small>Plays when you add a spend</small></span><span class="switch"><input type="checkbox" id="soundToggle" aria-label="Cha-ching sound" ${prefs.sound ? "checked" : ""}><i></i></span></div>
-        ${ln ? `<div class="set-row"><span>🌙 Daily reminder<small>A gentle nudge to log your spends</small></span><span class="switch"><input type="checkbox" id="remToggle" aria-label="Daily reminder" ${prefs.reminder.on ? "checked" : ""}><i></i></span></div>
-        ${prefs.reminder.on ? `<div class="set-row"><span>Remind me at</span><input type="time" id="remTime" value="${esc(prefs.reminder.time)}"></div>
-        <button class="btn" data-test-nudge style="text-align:left">🔔 Send a test nudge in 10 seconds</button>` : ""}
-        <div class="set-row"><span>🌗 Mid-month check-in<small>On the 15th: how your jars are doing so far</small></span><span class="switch"><input type="checkbox" id="midToggle" aria-label="Mid-month check-in" ${prefs.mid ? "checked" : ""}><i></i></span></div>` : ""}
-        <div class="set-group">
-          <div class="eyebrow">Fun stuff</div>
-          <button class="btn" data-stickers style="text-align:left">🏅 Jar stickers <span class="row-meta">· ${Object.keys(saved).length} of ${STICKERS.length}</span></button>
+          <div class="f">Where do your jars live?
+            <div class="homes">${[["crate", "📦 In a crate", crateView], ["shelf", "🪵 On a shelf", shelfView]].map(([id, label, view]) => `<button class="home-opt" data-display="${id}" aria-pressed="${prefs.display === id}"><span class="home-prev jarbox" aria-hidden="true">${view(demo, demoBy, `cp-${id}-`)}</span><b>${label}</b></button>`).join("")}</div>
+          </div>
+          <div class="set-row"><span>🎉 Festive mode<small>${fa ? `Showing the ${esc(THEMES.find((t) => t.id === fa.skin).name)} theme for ${esc(fa.name)}, until ${fa.until.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : f ? `Taking a break for ${esc(f.name)} since you picked a theme` : "Dresses up for Diwali, Thanksgiving and the holidays, then switches back"}</small></span><span class="switch"><input type="checkbox" id="festiveToggle" aria-label="Festive mode" ${prefs.festive ? "checked" : ""}><i></i></span></div>`)}
+        ${section("money", "💱", "Currency", currency.code, `
+          <select class="t" id="curSel" aria-label="Currency">${CURRENCIES.map(([code, name]) => `<option value="${code}" ${code === currency.code ? "selected" : ""}>${code} · ${name}</option>`).join("")}</select>
+          <span class="row-meta">Example: ${esc(money(1234.5))}. Changing currency relabels your amounts; it doesn't convert them.</span>`)}
+        ${section("alerts", "🔔", ln ? "Sounds & reminders" : "Sounds", [prefs.sound ? "Cha-ching on" : "Quiet", ln && prefs.reminder.on ? fmtTime(prefs.reminder.time) : ""].filter(Boolean).join(" · "), `
+          <div class="set-row"><span>🔔 Cha-ching sound<small>Plays when you add a spend</small></span><span class="switch"><input type="checkbox" id="soundToggle" aria-label="Cha-ching sound" ${prefs.sound ? "checked" : ""}><i></i></span></div>
+          ${ln ? `<div class="set-row"><span>🌙 Daily reminder<small>A gentle nudge to log your spends</small></span><span class="switch"><input type="checkbox" id="remToggle" aria-label="Daily reminder" ${prefs.reminder.on ? "checked" : ""}><i></i></span></div>
+          ${prefs.reminder.on ? `<div class="set-row"><span>Remind me at</span><input type="time" id="remTime" value="${esc(prefs.reminder.time)}"></div>
+          <button class="btn" data-test-nudge style="text-align:left">🔔 Send a test nudge in 10 seconds</button>` : ""}
+          <div class="set-row"><span>🌗 Mid-month check-in<small>On the 15th: how your jars are doing so far</small></span><span class="switch"><input type="checkbox" id="midToggle" aria-label="Mid-month check-in" ${prefs.mid ? "checked" : ""}><i></i></span></div>` : ""}`)}
+        ${section("fun", "🏅", "Fun stuff", `${nStk} sticker${nStk === 1 ? "" : "s"}`, `
+          <button class="btn" data-stickers style="text-align:left">🏅 Jar stickers <span class="row-meta">· ${nStk} of ${STICKERS.length}</span></button>
           ${pastMonths().length ? `<button class="btn" data-wrap="${pastMonths().slice(-1)[0]}" style="text-align:left">🎁 ${monthName(pastMonths().slice(-1)[0]).split(" ")[0]} Jar Wrap</button>` : ""}
-          ${nRep ? `<button class="btn" data-recurring style="text-align:left">🔁 Monthly repeats <span class="row-meta">· ${nRep}</span></button>` : ""}
-        </div>
-        ${state.readOnly ? "" : `<div class="set-group">
-          <div class="eyebrow">Your data</div>
+          ${nRep ? `<button class="btn" data-recurring style="text-align:left">🔁 Monthly repeats <span class="row-meta">· ${nRep}</span></button>` : ""}`)}
+        ${state.readOnly ? "" : section("data", "💾", "Your data", lastBackup ? `Backed up ${new Date(Number(lastBackup)).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "", `
           <div class="btn-row"><button class="btn" data-backup>💾 Back up</button><button class="btn" data-restore>📂 Restore</button><button class="btn" data-csv>📊 Export CSV</button></div>
-          <div class="row-meta">${lastBackup ? `Last backup: ${new Date(Number(lastBackup)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. ` : ""}A backup is one small file with all your jars and spends. Keep it somewhere safe, like your Drive or email${JT() ? ". Android's own backup also brings your jars along to a new phone" : IN_CLAUDE ? "" : ", and use Restore on a new phone"}.</div>
-        </div>`}
-        <div class="set-group">
-          <div class="eyebrow">Say hi</div>
+          <div class="row-meta">${lastBackup ? `Last backup: ${new Date(Number(lastBackup)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. ` : ""}A backup is one small file with all your jars and spends. Keep it somewhere safe, like your Drive or email${JT() ? ". Android's own backup also brings your jars along to a new phone" : IN_CLAUDE ? "" : ", and use Restore on a new phone"}.</div>`)}
+        ${section("hi", "💌", "Say hi", "", `
           ${JT() ? `<button class="btn" data-rate-store style="text-align:left">⭐ Rate Little Jars</button>` : ""}
           <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
+          <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button>${IS_NATIVE || document.querySelector('link[rel="manifest"]') ? `<a class="link-btn" href="privacy.html">Privacy</a>` : ""}</div>`)}
         </div>
-        <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button>${IS_NATIVE || document.querySelector('link[rel="manifest"]') ? `<a class="link-btn" href="privacy.html">Privacy</a>` : ""}</div>
-        <div class="version">Your budget is stored only on this device.</div>
-        <div class="version">Little Jars ${APP_VERSION}</div>`;
+        <div class="version">Your budget is stored only on this device · Little Jars ${APP_VERSION}</div>`;
     } else if (sheet.kind === "feature") {
       html = `<div class="sheet-head"><h3>${sheet.feedback ? "💬 Help us do better" : "💌 Request a feature"}</h3><button class="x" data-close aria-label="Close">×</button></div>
         <form id="featureForm" style="display:grid;gap:14px" novalidate>
@@ -1639,6 +1688,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.dataset.fill) { sheet.draft.fill = t.dataset.fill; return renderSheet(); }
     if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; sheet.error = ""; return renderSheet(); }
     if (t.dataset.move) { await moveBucket(sheet.id, Number(t.dataset.move)); return renderSheet(); }
+    if (t.dataset.acc) { sheet.open = sheet.open === t.dataset.acc ? null : t.dataset.acc; return renderSheet(); }
+    if (t.dataset.display) { prefs.display = t.dataset.display; savePrefs(); render(); return renderSheet(); }
     if (t.dataset.pickTheme) { setTheme(t.dataset.pickTheme, true); savePrefs(); checkStickers(); return renderSheet(); }
     if (t.dataset.editSpend) return openEditSpend(t.dataset.editSpend);
     if (t.matches("[data-stickers]")) return openSheet({ kind: "stickers" });
@@ -2194,6 +2245,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       if (p.theme && p.theme !== currentTheme()) { setTheme(p.theme); lsSet("budget-jars-theme", p.theme); }
       if (p.currency && p.currency !== currency.code) { setCurrencyCode(p.currency); prefs.currency = currency.code; lsSet("budget-jars-currency", currency.code); }
       if (typeof p.sound === "boolean") { prefs.sound = p.sound; lsSet("lj-sound", p.sound ? "on" : "off"); }
+      if ((p.display === "crate" || p.display === "shelf") && p.display !== prefs.display) { prefs.display = p.display; lsSet("lj-display", p.display); }
       if (typeof p.festive === "boolean" && p.festive !== prefs.festive) { prefs.festive = p.festive; lsSet("lj-festive", p.festive ? "on" : "off"); applySkin(); }
       render(); if (sheet && sheet.kind === "settings") renderSheet();
     });
