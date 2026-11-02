@@ -163,6 +163,24 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 :root[data-skin="diwali"] .jarbox { --box: #6A2C91; --box-wall: #4E1F6E; --box-flap: #7B3AA6; --box-inside: #2B0F40; --box-print: #FFD166; }
 :root[data-skin="holiday"] .jarbox .b-ribbon, :root[data-skin="diwali"] .jarbox .b-ribbon { display: inline; }
 .jarbox .b-print { fill: var(--box-print); font-family: var(--font-display); font-weight: 700; }
+.jarbox { max-width: 400px; }
+.jarbox .b-front { fill: var(--box); }
+.jarbox .b-post { fill: var(--box-flap); }
+.jarbox .b-plank { stroke: var(--box-wall); stroke-width: 2; }
+.jarbox .b-grain { fill: none; stroke: var(--box-wall); stroke-width: 1.2; opacity: .45; }
+.jarbox .b-hole { fill: var(--box-inside); }
+.jarbox .b-nail { fill: var(--box-inside); opacity: .7; }
+.cjar { cursor: pointer; }
+.cjar .c-glass { fill: color-mix(in srgb, var(--surface) 72%, transparent); }
+.cjar .c-fill { fill: var(--c); opacity: .9; }
+.cjar .c-edge { fill: none; stroke: color-mix(in srgb, var(--c) 45%, #7A8C96); stroke-width: 1.6; }
+.cjar.over .c-edge { stroke: var(--danger); stroke-width: 2.4; }
+.cjar .c-shine { fill: #FFFFFF; opacity: .55; }
+.cjar .c-neck { fill: color-mix(in srgb, var(--c) 30%, var(--surface)); }
+.cjar .c-lid { fill: color-mix(in srgb, var(--c) 60%, #222); }
+.rhythm-chip { position: absolute; top: 0; right: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-weight: 700; font-size: .9rem; box-shadow: var(--shadow); }
+.box-sticker .sticker-sub { font-size: .8rem; font-weight: 600; color: #7A6650; margin-top: 1px; }
+.pace b { color: var(--ink); }
 .lid-g { cursor: pointer; }
 .lid-g .l-glass { fill: rgba(255, 255, 255, .28); stroke: rgba(255, 255, 255, .5); stroke-width: 1; }
 .lid-g .l-rim { fill: color-mix(in srgb, var(--c) 62%, #000); }
@@ -523,12 +541,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   <section class="summary" id="summary" aria-live="polite"></section>
 
   <section style="display:grid;gap:12px">
-    <div class="section-head"><h2>Your jars <span class="hint" id="dragHint"></span></h2><button class="link-btn" id="newBucketTop">+ New jar</button></div>
+    <div class="section-head"><h2>Your jars <span class="hint" id="dragHint"></span></h2></div>
     <div class="jars" id="jars"></div>
   </section>
 
   <div class="notice" id="notice" hidden></div>
-  <p class="foot" id="foot"><a href="privacy.html">Privacy</a> · Your budget is stored only on this device.</p>
 </div>
 
 <button class="fab" id="fab"><b>+</b> Add spend</button>
@@ -1164,42 +1181,48 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   }
 
   /* ---------- the box of jars, seen from the top ---------- */
-  function boxView(buckets, by) {
-    const n = buckets.length;
-    const cols = n <= 4 ? Math.max(n, 1) : n <= 8 ? Math.ceil(n / 2) : Math.ceil(n / 3);
-    const rows = Math.max(1, Math.ceil(n / cols));
-    const IW = 240, cell = Math.min(IW / cols, 78), IH = rows * cell + 8;
-    const ix = 40, iy = 46, W = 320, H = iy + IH + 8 + 40;
-    const wl = ix - 8, wr = ix + IW + 8, wt = iy - 8, wb = iy + IH + 8;
-    let lids = "";
-    buckets.forEach((b, i) => {
-      const row = Math.floor(i / cols), col = i % cols, inRow = Math.min(cols, n - row * cols);
-      const cx = ix + IW / 2 + (col - (inRow - 1) / 2) * (IW / cols), cy = iy + 4 + cell * (row + .5);
-      const rad = cell * .4, lim = Number(b.limit) || 0, over = lim - (by[b.id] || 0) < 0;
-      const fs = Math.max(7, Math.min(13, rad * .36, (rad * 1.75) / (b.name.length * .58))), maxCh = Math.max(3, Math.floor((rad * 1.75) / (fs * .58)));
-      const name = b.name.length > maxCh ? b.name.slice(0, maxCh - 1).trimEnd() + "…" : b.name;
-      lids += `<g class="lid-g ${over ? "over" : ""}" style="--c:${bucketColor(b)}" data-open="${esc(b.id)}" role="button" aria-label="${esc(b.name)}">
-        <circle class="l-glass" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(rad * 1.13).toFixed(1)}"/>
-        <circle class="l-rim" cx="${cx.toFixed(1)}" cy="${(cy + 2).toFixed(1)}" r="${rad.toFixed(1)}"/>
-        <circle class="l-top" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(rad * .9).toFixed(1)}"/>
-        <circle class="l-ring" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(rad * .74).toFixed(1)}"/>
-        <text x="${cx.toFixed(1)}" y="${(cy - rad * .12).toFixed(1)}" font-size="${(fs * 1.35).toFixed(1)}" text-anchor="middle">${esc(b.emoji || "🫙")}</text>
-        <text class="l-name" x="${cx.toFixed(1)}" y="${(cy + rad * .5).toFixed(1)}" font-size="${fs.toFixed(1)}">${esc(name)}</text>
+  // A wooden crate seen from the front, with a mini jar for each budget jar poking out the top,
+  // filled to what's left. Up to 5 jars stand in one row; more get a second row behind.
+  function crateView(buckets, by) {
+    const show = buckets.slice(0, 10), W = 320, H = 168;
+    const fx = 34, fy = 98, fw = 240, fh = 62, dx = 24, dy = 14;
+    const back = show.length > 5 ? show.slice(0, Math.ceil(show.length / 2)) : [];
+    const front = show.slice(back.length);
+    const jar = (b, cx, baseY, jw, rot) => {
+      const jh = jw * 1.36, lim = Number(b.limit) || 0, sp = by[b.id] || 0, over = lim - sp < 0;
+      const frac = lim > 0 ? Math.max(0, Math.min(1, (lim - sp) / lim)) : 0;
+      const id = "cj-" + String(b.id).replace(/[^A-Za-z0-9_-]/g, ""), f = (n) => n.toFixed(1), x = -jw / 2;
+      return `<g class="cjar ${over ? "over" : ""}" style="--c:${bucketColor(b)}" transform="translate(${f(cx)} ${f(baseY)}) rotate(${f(rot)})" data-open="${esc(b.id)}" role="button" aria-label="${esc(b.name)}">
+        <defs><clipPath id="${id}"><rect x="${f(x)}" y="${f(-jh)}" width="${f(jw)}" height="${f(jh)}" rx="${f(jw * .24)}"/></clipPath></defs>
+        <rect class="c-glass" x="${f(x)}" y="${f(-jh)}" width="${f(jw)}" height="${f(jh)}" rx="${f(jw * .24)}"/>
+        <g clip-path="url(#${id})"><rect class="c-fill" x="${f(x)}" y="${f(-jh * frac)}" width="${f(jw)}" height="${f(jh * frac + 2)}"/></g>
+        <rect class="c-edge" x="${f(x)}" y="${f(-jh)}" width="${f(jw)}" height="${f(jh)}" rx="${f(jw * .24)}"/>
+        <rect class="c-shine" x="${f(x + jw * .14)}" y="${f(-jh * .82)}" width="${f(jw * .1)}" height="${f(jh * .38)}" rx="2"/>
+        <rect class="c-neck" x="${f(-jw * .36)}" y="${f(-jh - 5)}" width="${f(jw * .72)}" height="6" rx="2"/>
+        <rect class="c-lid" x="${f(-jw * .42)}" y="${f(-jh - 13)}" width="${f(jw * .84)}" height="10" rx="3.5"/>
+        <text x="0" y="${f(-jh * .6)}" font-size="${f(jw * .42)}" text-anchor="middle" dominant-baseline="middle">${esc(b.emoji || "🫙")}</text>
       </g>`;
-    });
-    if (!n) lids = `<text class="b-print" x="${ix + IW / 2}" y="${iy + IH / 2 + 5}" font-size="13" text-anchor="middle" style="fill:#EBD3B0">Your jars go here</text>`;
+    };
+    const row = (list, baseY, shift, jwMax, tilt) => list.map((b, i) => {
+      const slot = (fw - 16) / list.length, jw = Math.min(jwMax, slot * .86);
+      const rot = (((hash(b.id) % 13) - 6) * tilt);
+      return jar(b, fx + 8 + shift + slot * (i + .5), baseY, jw, rot);
+    }).join("");
+    const jars = row(back, fy - 12, dx * .55, 42, .9) + row(front, fy + 16, 0, 54, 1.2);
+    const empty = show.length ? "" : `<text class="b-print" x="${fx + fw / 2 + dx / 2}" y="${fy - 2}" font-size="13" text-anchor="middle">Your jars go here</text>`;
     return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
-        <polygon class="b-flap" points="${wl},${wt} ${wr},${wt} ${wr - 18},${wt - 34} ${wl + 18},${wt - 34}"/>
-        <polygon class="b-flap" points="${wl},${wb} ${wr},${wb} ${wr - 18},${wb + 34} ${wl + 18},${wb + 34}"/>
-        <polygon class="b-flap" points="${wl},${wt} ${wl},${wb} ${wl - 30},${wb - 14} ${wl - 30},${wt + 14}"/>
-        <polygon class="b-flap" points="${wr},${wt} ${wr},${wb} ${wr + 30},${wb - 14} ${wr + 30},${wt + 14}"/>
-        <rect class="b-ribbon" x="${W / 2 - 9}" y="${wt - 34}" width="18" height="34"/><rect class="b-ribbon" x="${W / 2 - 9}" y="${wb}" width="18" height="34"/>
-        <rect class="b-ribbon" x="${wl - 30}" y="${(wt + wb) / 2 - 9}" width="30" height="18"/><rect class="b-ribbon" x="${wr}" y="${(wt + wb) / 2 - 9}" width="30" height="18"/>
-        <text class="b-print" x="${wl - 15}" y="${wt + 34}" font-size="12" text-anchor="middle">↑</text>
-        <text class="b-print" x="${wr + 15}" y="${wt + 34}" font-size="12" text-anchor="middle">↑</text>
-        <rect class="b-wall" x="${wl}" y="${wt}" width="${wr - wl}" height="${wb - wt}" rx="3"/>
-        <rect class="b-inside" x="${ix}" y="${iy}" width="${IW}" height="${IH}" rx="2"/>
-        ${lids}
+        <polygon class="b-inside" points="${fx},${fy} ${fx + dx},${fy - dy} ${fx + fw + dx},${fy - dy} ${fx + fw},${fy}"/>
+        ${empty}${jars}
+        <polygon class="b-wall" points="${fx + fw},${fy} ${fx + fw + dx},${fy - dy} ${fx + fw + dx},${fy + fh - dy} ${fx + fw},${fy + fh}"/>
+        <rect class="b-front" x="${fx}" y="${fy}" width="${fw}" height="${fh}" rx="3"/>
+        <line class="b-plank" x1="${fx}" y1="${fy + fh / 3}" x2="${fx + fw}" y2="${fy + fh / 3}"/>
+        <line class="b-plank" x1="${fx}" y1="${fy + fh * 2 / 3}" x2="${fx + fw}" y2="${fy + fh * 2 / 3}"/>
+        <path class="b-grain" d="M${fx + 30} ${fy + 10} q30 -4 60 0 t60 0 M${fx + 60} ${fy + 31} q40 5 80 0 M${fx + 24} ${fy + 52} q50 -5 100 0 t70 0"/>
+        <rect class="b-post" x="${fx}" y="${fy}" width="12" height="${fh}" rx="2"/>
+        <rect class="b-post" x="${fx + fw - 12}" y="${fy}" width="12" height="${fh}" rx="2"/>
+        <rect class="b-hole" x="${fx + fw + 6}" y="${fy + 8}" width="${dx - 12}" height="9" rx="4" transform="skewY(-30)" transform-origin="${fx + fw + dx / 2} ${fy + 14}"/>
+        <rect class="b-ribbon" x="${fx + fw / 2 - 9}" y="${fy}" width="18" height="${fh}"/>
+        ${[[6, 7], [6, fh - 7], [fw - 6, 7], [fw - 6, fh - 7]].map(([x, y]) => `<circle class="b-nail" cx="${fx + x}" cy="${fy + y}" r="1.6"/>`).join("")}
       </svg>`;
   }
 
@@ -1217,19 +1240,20 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     let pace = "";
     if (state.month === curMonth() && limit > 0) {
       const dLeft = daysIn(state.month) - new Date().getDate() + 1;
-      pace = left > 0 ? `${dLeft} day${dLeft === 1 ? "" : "s"} left in ${monthName(state.month).split(" ")[0]} · about ${money(left / dLeft)} a day to stay on track` : `${dLeft} day${dLeft === 1 ? "" : "s"} left and you're over budget`;
+      const days = `${dLeft} day${dLeft === 1 ? "" : "s"} left`;
+      pace = left > 0 ? `<b>${money(left / dLeft)} a day</b> keeps you on track · ${days}` : `Over budget · ${days}`;
     } else if (state.month < curMonth() && limit > 0) {
       pace = left >= 0 ? `Finished ${money(left)} under budget` : `Finished ${money(-left)} over budget`;
     }
-    const segs = limit > 0 ? buckets.map((b) => { const w = Math.min(by[b.id] || 0, b.limit) / Math.max(limit, spent) * 100; return w > 0 ? `<i style="width:${w}%;background:${bucketColor(b)}" title="${esc(b.name)}"></i>` : ""; }).join("") : "";
+    const r = rhythm();
     $("summary").innerHTML = loading ? `<div class="eyebrow" style="text-align:center">Loading your budget…</div>` : `
-      <div class="jarbox">${boxView(buckets, by)}</div>
+      <div class="jarbox">${crateView(buckets, by)}
+        ${r >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${r}-week logging rhythm">🎵${r}</button>` : ""}</div>
       <div class="box-sticker ${left < 0 ? "over" : ""}">
         <div class="eyebrow">${left >= 0 ? "Left in all jars" : "Over budget by"}</div>
         <div class="big num">${money(Math.abs(left))}</div>
+        ${limit > 0 ? `<div class="sticker-sub num">of ${money(limit)} · ${money(spent)} spent</div>` : ""}
       </div>
-      <div class="sum-line num"><span><b>${money(spent)}</b> spent</span><span><b>${money(limit)}</b> budgeted</span><span><b>${buckets.length}</b> jar${buckets.length === 1 ? "" : "s"}</span></div>
-      <div class="stack" role="img" aria-label="${money(spent)} of ${money(limit)} spent">${segs}</div>
       ${pace ? `<div class="pace">${pace}</div>` : ""}
       ${badgesLine()}`;
 
@@ -1249,25 +1273,18 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       </button>`;
     }).join("") + (loading || state.readOnly ? "" : `<button class="jar add" data-new-bucket><span>+</span><span>${buckets.length ? "New jar" : "Make your first jar"}</span></button>`);
     pourJars();
-    $("dragHint").textContent = buckets.length > 1 && !state.readOnly ? "· hold to move" : "";
+    const newish = Date.now() - (Number(lsGet("lj-first-use")) || 0) < 3 * 864e5;
+    $("dragHint").textContent = buckets.length > 1 && !state.readOnly && newish ? "· hold to move" : "";
     $("clipCount").hidden = !ms.length; $("clipCount").textContent = ms.length;
 
     $("fab").hidden = state.readOnly;
-    $("newBucketTop").hidden = state.readOnly;
     if (drawer.open) renderDrawer();
     if (sheet && sheet.kind === "detail") renderSheet();
   }
+  // Past months get a shortcut to their Jar Wrap.
   function badgesLine() {
-    let saved = {};
-    try { saved = JSON.parse(lsGet("lj-stickers") || "{}") || {}; } catch {}
-    const n = Object.keys(saved).length, r = rhythm();
-    const wrap = state.month < curMonth() && monthStats(state.month).ms.length;
-    const parts = [
-      n ? `<button class="mini" data-stickers>🏅 ${n} sticker${n === 1 ? "" : "s"}</button>` : "",
-      r >= 2 ? `<button class="mini" data-rhythm>🎵 ${r}-week rhythm</button>` : "",
-      wrap ? `<button class="mini" data-wrap="${state.month}">🎁 ${monthName(state.month).split(" ")[0]} Jar Wrap</button>` : "",
-    ].join("");
-    return parts ? `<div class="badges">${parts}</div>` : "";
+    if (!(state.month < curMonth() && monthStats(state.month).ms.length)) return "";
+    return `<div class="badges"><button class="mini" data-wrap="${state.month}">🎁 ${monthName(state.month).split(" ")[0]} Jar Wrap</button></div>`;
   }
   function spendRow(s, b, showDate = true) {
     const edit = state.readOnly ? "" : ` data-edit-spend="${esc(s.id)}" role="button" tabindex="0" aria-label="Edit ${esc(money(Number(s.amount) || 0))}${s.note ? " " + esc(s.note) : ""}"`;
@@ -1440,7 +1457,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
           ${JT() ? `<button class="btn" data-rate-store style="text-align:left">⭐ Rate Little Jars</button>` : ""}
           <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
         </div>
-        <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button></div>
+        <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button>${IS_NATIVE || document.querySelector('link[rel="manifest"]') ? `<a class="link-btn" href="privacy.html">Privacy</a>` : ""}</div>
+        <div class="version">Your budget is stored only on this device.</div>
         <div class="version">Little Jars ${APP_VERSION}</div>`;
     } else if (sheet.kind === "feature") {
       html = `<div class="sheet-head"><h3>${sheet.feedback ? "💬 Help us do better" : "💌 Request a feature"}</h3><button class="x" data-close aria-label="Close">×</button></div>
@@ -1610,7 +1628,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.id === "fab") return openAddSpend();
     if (t.id === "clipTab") return openDrawer();
     if (t.id === "settingsBtn") return openSheet({ kind: "settings" });
-    if (t.id === "newBucketTop" || t.matches("[data-new-bucket]")) return openBucket();
+    if (t.matches("[data-new-bucket]")) return openBucket();
     if (t.dataset.dfilter) { drawer.filter = t.dataset.dfilter; return renderDrawer(); }
     if (t.dataset.open) return openSheet({ kind: "detail", id: t.dataset.open });
     if (t.dataset.spendIn) return openAddSpend(t.dataset.spendIn);
@@ -2086,7 +2104,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   let tourStep = 0, tourSteps = [], tourActive = false;
   function startTour() {
     tourSteps = [
-      { sel: ".jarbox", title: "Your box of jars 📦", text: "Every jar you make sits in this box. The label shows what's left this month across all of them." },
+      { sel: ".jarbox", title: "Your crate of jars 📦", text: "Every jar you make sits in this crate, filled to what's left. The label shows what's left this month across all of them." },
       state.buckets.length
         ? { sel: ".jar[data-id]", title: "Your jars 🫙", text: "Each jar has a monthly limit and drains as you spend. Tap one for details. Hold and drag to move it." }
         : { sel: ".jar.add", title: "Make your first jar 🫙", text: "Start here: create a jar like Groceries and give it a monthly limit." },
@@ -2156,7 +2174,6 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if ("serviceWorker" in navigator && location.protocol === "https:" && !IS_NATIVE && document.querySelector('link[rel="manifest"]')) {
       navigator.serviceWorker.register("sw.js").catch(() => {});
     }
-    if (!IS_NATIVE && !document.querySelector('link[rel="manifest"]')) { const f = $("foot"); if (f) f.hidden = true; }
     render();
     const introDone = playIntro();
     let db = null;
