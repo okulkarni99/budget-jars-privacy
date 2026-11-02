@@ -1774,7 +1774,8 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         ${section("hi", "💌", "Say hi", "", `
           ${JT() ? `<button class="btn" data-rate-store style="text-align:left">⭐ Rate Little Jars</button>` : ""}
           <button class="btn" data-feature style="text-align:left">💌 Request a feature</button>
-          <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button>${IS_NATIVE || document.querySelector('link[rel="manifest"]') ? `<a class="link-btn" href="privacy.html">Privacy</a>` : ""}</div>`)}
+          <div class="links"><button class="link-btn" data-replay-tour>Replay the tour</button><button class="link-btn" data-whatsnew>What's new</button>${IS_NATIVE || document.querySelector('link[rel="manifest"]') ? `<a class="link-btn" href="privacy.html">Privacy &amp; credits</a>` : ""}</div>
+          <div class="row-meta">Thanks to our creators: "Yay!" sound by I Love Jesus Christ (JesusChristIsGod) on Pixabay · Fredoka and Figtree fonts (SIL Open Font License).</div>`)}
         </div>
         <div class="version">Your budget is stored only on this device · Little Jars ${APP_VERSION}</div>`;
     } else if (sheet.kind === "feature") {
