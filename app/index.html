@@ -307,6 +307,32 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
   padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px);
 }
 .drawer.open { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.3,.8,.3,1), visibility 0s; }
+.drawer.left { right: auto; left: 0; transform: translateX(-105%); box-shadow: 20px 0 50px rgba(0,0,0,.25); padding-right: 0; padding-left: env(safe-area-inset-left, 0px); }
+.drawer.left.open { transform: none; }
+.month .month-label { width: auto; height: auto; flex: 1; font-size: 1.1rem; padding: 8px 4px; }
+.month-label .caret { font-size: .7rem; color: var(--muted); }
+/* Months drawer: chart, tips and a row per month */
+.m-body { overflow: auto; flex: 1; padding: 4px 16px 24px; display: grid; gap: 16px; align-content: start; }
+.m-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.m-card { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: grid; gap: 10px; }
+.m-card h4 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.m-chart svg { display: block; width: 100%; height: auto; }
+.m-chart .bud { fill: color-mix(in srgb, var(--ink) 10%, transparent); }
+.m-chart .sp { fill: var(--good); }
+.m-chart .sp.over { fill: var(--danger); }
+.m-chart .sp.now { fill: var(--accent); }
+.m-chart text { fill: var(--muted); font-size: 9px; font-weight: 600; }
+.m-legend { display: flex; gap: 14px; color: var(--muted); font-size: .78rem; font-weight: 600; }
+.m-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.tip { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.tip p { margin: 0; font-size: .92rem; }
+.tip .actions .btn { padding: 9px 14px; }
+.m-row { display: flex; align-items: center; gap: 12px; width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px; text-align: left; }
+.m-row + .m-row { margin-top: 8px; }
+.m-row .row-main b { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; }
+.m-row .m-status { font-weight: 700; font-size: .86rem; text-align: right; white-space: nowrap; }
+.m-row .m-status.good { color: var(--good); } .m-row .m-status.bad { color: var(--danger); }
+.m-row.current { box-shadow: inset 0 0 0 2px var(--accent); }
 .drawer-head { padding: 18px 18px 12px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
 .drawer-head .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .drawer-head .chip { flex: none; padding: 6px 12px; font-size: .88rem; }
@@ -557,7 +583,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     </div>
     <div class="month" role="group" aria-label="Month">
       <button id="prevMonth" aria-label="Previous month">‹</button>
-      <div class="month-label" id="monthLabel"></div>
+      <button class="month-label" id="monthLabel" aria-label="Your months"></button>
       <button id="nextMonth" aria-label="Next month">›</button>
     </div>
   </header>
@@ -579,6 +605,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 </button>
 <div class="drawer-scrim" id="drawerScrim" hidden></div>
 <aside class="drawer" id="drawer" aria-label="Expenses" aria-hidden="true"><div id="drawerBody" style="display:contents"></div></aside>
+<aside class="drawer left" id="monthsDrawer" aria-label="Your months" aria-hidden="true"><div id="monthsBody" style="display:contents"></div></aside>
 <div id="snow" aria-hidden="true" hidden></div>
 <div id="sheetRoot"></div>
 <div id="confirmRoot"></div>
@@ -741,7 +768,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   const weekOf = (s) => { const d = parseDay(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); };
 
   /* ---------- state ---------- */
-  const state = { buckets: [], spends: [], recurring: [], loaded: { buckets: false, spends: false, recurring: false }, month: curMonth(), readOnly: false };
+  const state = { buckets: [], spends: [], recurring: [], months: [], loaded: { buckets: false, spends: false, recurring: false, months: false }, month: curMonth(), readOnly: false };
   const prefs = { theme: "auto", display: "crate", currency: "USD", sound: true, festive: true, reminder: { on: false, time: "21:00" }, mid: true };
   let store = null;
   let sheet = null;
@@ -766,6 +793,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const top = layers.pop();
     if (top === "confirm") answerConfirm(false, true);
     else if (top === "drawer") closeDrawer(true);
+    else if (top === "months") closeMonths(true);
     else if (top === "sheet") closeSheet(true);
     ensureGuard();
   });
@@ -774,6 +802,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (top === "confirm") answerConfirm(false);
     else if (top === "sheet") closeSheet();
     else if (top === "drawer") closeDrawer();
+    else if (top === "months") closeMonths();
   }
 
   /* ---------- storage ---------- */
@@ -1047,7 +1076,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   let changeTimer;
   function dataChanged() {
     clearTimeout(changeTimer);
-    changeTimer = setTimeout(() => { checkStickers(); syncReminderSoon(); }, 600);
+    changeTimer = setTimeout(() => { checkStickers(); syncReminderSoon(); snapshotMonth(); }, 600);
   }
 
   /* ---------- derived ---------- */
@@ -1073,15 +1102,31 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     while (weeks.has(ymd(d))) { n++; d.setDate(d.getDate() - 7); }
     return n;
   }
-  // Totals for one month, using today's jar limits.
+  // Each month remembers its jar limits (collection "months", one doc per YYYY-MM), so changing a
+  // limit today doesn't rewrite the past. Months from before this existed use today's limits.
+  function limitOf(b, ym = state.month) {
+    const snap = state.months.find((m) => m.id === ym), v = snap && snap.limits && snap.limits[b.id];
+    return Number(v ?? b.limit) || 0;
+  }
+  function snapshotMonth() {
+    if (state.readOnly || !store || !state.loaded.buckets || !state.loaded.months) return;
+    const m = curMonth(), limits = Object.fromEntries(state.buckets.map((b) => [b.id, Number(b.limit) || 0]));
+    // The first time, also freeze earlier months at today's limits (the best we know).
+    const first = !state.months.length ? pastMonths() : [];
+    const snap = state.months.find((x) => x.id === m);
+    if (!first.length && snap && JSON.stringify(snap.limits || {}) === JSON.stringify(limits)) return;
+    write(async () => { for (const pm of [...first, m]) await store.put("months", pm, { limits, savedAt: Date.now() }); });
+  }
+  // Totals for one month, with that month's limits.
   function monthStats(ym) {
     const buckets = sortedBuckets(), ids = new Set(buckets.map((b) => b.id));
     const ms = state.spends.filter((s) => (s.date || "").slice(0, 7) === ym && ids.has(s.bucketId));
     const by = {};
     ms.forEach((s) => { by[s.bucketId] = (by[s.bucketId] || 0) + (Number(s.amount) || 0); });
-    const limit = buckets.reduce((a, b) => a + (Number(b.limit) || 0), 0);
+    const lims = Object.fromEntries(buckets.map((b) => [b.id, limitOf(b, ym)]));
+    const limit = buckets.reduce((a, b) => a + lims[b.id], 0);
     const spent = ms.reduce((a, s) => a + (Number(s.amount) || 0), 0);
-    return { ym, buckets, ms, by, limit, spent, left: limit - spent };
+    return { ym, buckets, ms, by, lims, limit, spent, left: limit - spent };
   }
   // Past months that have any spends, oldest first.
   const pastMonths = () => [...new Set(state.spends.map((s) => (s.date || "").slice(0, 7)).filter((m) => m && m < curMonth()))].sort();
@@ -1099,11 +1144,10 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (past.some((m) => m.left >= 0)) got.add("under");
     if (past.some((m) => m.left >= m.limit * 0.2)) got.add("saver");
     if (state.buckets.some((b) => {
-      const lim = Number(b.limit) || 0; if (!(lim > 0)) return false;
       let run = 0;
       for (let i = 0; i < months.length; i++) {
-        const back2back = i > 0 && shiftMonth(months[i - 1], 1) === months[i];
-        const ok = (stats[i].by[b.id] || 0) <= lim;
+        const back2back = i > 0 && shiftMonth(months[i - 1], 1) === months[i], lim = stats[i].lims[b.id];
+        const ok = lim > 0 && (stats[i].by[b.id] || 0) <= lim;
         run = ok ? (back2back ? run + 1 : 1) : 0;
         if (run >= 3) return true;
       }
@@ -1211,7 +1255,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   // or on a shelf (Settings → Theme → Where do your jars live?). Up to 10 jars are shown.
   const f1 = (n) => n.toFixed(1);
   function miniJar(b, by, cx, baseY, jw, rot, pre = "cj-") {
-    const jh = jw * 1.36, lim = Number(b.limit) || 0, sp = by[b.id] || 0, over = lim - sp < 0;
+    const jh = jw * 1.36, lim = limitOf(b), sp = by[b.id] || 0, over = lim - sp < 0;
     const frac = lim > 0 ? Math.max(0, Math.min(1, (lim - sp) / lim)) : 0;
     const id = pre + String(b.id).replace(/[^A-Za-z0-9_-]/g, ""), x = -jw / 2;
     return `<g class="cjar ${over ? "over" : ""}" style="--c:${bucketColor(b)}" transform="translate(${f1(cx)} ${f1(baseY)}) rotate(${f1(rot)})" data-open="${esc(b.id)}" role="button" aria-label="${esc(b.name)}">
@@ -1269,7 +1313,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
   /* ---------- render ---------- */
   function render() {
-    $("monthLabel").textContent = monthName(state.month);
+    $("monthLabel").innerHTML = `${monthName(state.month)} <span class="caret" aria-hidden="true">▾</span>`;
     const rr = rhythm();
     $("rhythmSlot").innerHTML = rr >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${rr}-week logging rhythm">🎵 ${rr}</button>` : "";
     $("nextMonth").disabled = state.month >= curMonth();
@@ -1277,7 +1321,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const buckets = sortedBuckets();
     const loading = !state.loaded.buckets || !state.loaded.spends;
 
-    const limit = buckets.reduce((a, b) => a + (Number(b.limit) || 0), 0);
+    const limit = buckets.reduce((a, b) => a + limitOf(b), 0);
     const spent = buckets.reduce((a, b) => a + (by[b.id] || 0), 0);
     const left = limit - spent;
     let pace = "";
@@ -1299,7 +1343,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       ${badgesLine()}`;
 
     $("jars").innerHTML = loading ? "" : buckets.map((b) => {
-      const sp = by[b.id] || 0, lim = Number(b.limit) || 0, lf = lim - sp;
+      const sp = by[b.id] || 0, lim = limitOf(b), lf = lim - sp;
       const frac = lim > 0 ? Math.max(0, Math.min(1, lf / lim)) : 0;
       const used = lim > 0 ? sp / lim : 0;
       const pill = lf < 0 ? `<span class="pill bad">Over</span>` : used >= 0.85 ? `<span class="pill warn">Almost out</span>` : "";
@@ -1320,6 +1364,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
     $("fab").hidden = state.readOnly;
     if (drawer.open) renderDrawer();
+    if (monthsOpen) renderMonths();
     if (sheet && sheet.kind === "detail") renderSheet();
   }
   // Past months get a shortcut to their Jar Wrap.
@@ -1370,6 +1415,86 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         </div>
       </div>
       <div class="drawer-list">${body || `<div class="empty">No spends here for ${monthName(state.month).split(" ")[0]} yet. Tap <b>Add spend</b> to log one.</div>`}</div>`;
+  }
+
+  /* ---------- months drawer: every month you've tracked, a chart, and tips ---------- */
+  let monthsOpen = false;
+  function openMonths() {
+    if (monthsOpen) return;
+    if (drawer.open) closeDrawer();
+    monthsOpen = true; pushLayer("months"); renderMonths();
+    $("drawerScrim").hidden = false;
+    requestAnimationFrame(() => { $("monthsDrawer").classList.add("open"); $("monthsDrawer").setAttribute("aria-hidden", "false"); });
+  }
+  function closeMonths(fromPop) {
+    if (!monthsOpen) return;
+    monthsOpen = false; if (!fromPop) popLayer("months");
+    $("monthsDrawer").classList.remove("open"); $("monthsDrawer").setAttribute("aria-hidden", "true"); $("drawerScrim").hidden = true;
+  }
+  // Months with any spends, plus this month; newest first.
+  const trackedMonths = () => [...new Set([...state.spends.map((s) => (s.date || "").slice(0, 7)).filter((m) => m && m <= curMonth()), curMonth()])].sort().reverse();
+  const niceCeil = (v) => { const step = v < 100 ? 5 : v < 500 ? 10 : v < 2000 ? 50 : 100; return Math.ceil(v / step) * step; };
+  // Per-jar tips from the last 3 finished months: lower a jar that's always comfortably under,
+  // raise one that keeps going over. Needs real spending in at least 2 of those months.
+  function budgetTips() {
+    const months = pastMonths().slice(-3);
+    if (months.length < 3) return [];
+    const stats = months.map(monthStats);
+    let hidden = {}; try { hidden = JSON.parse(lsGet("lj-tips-hidden") || "{}") || {}; } catch {}
+    const tips = [];
+    sortedBuckets().forEach((b) => {
+      const L = Number(b.limit) || 0; if (!(L > 0) || hidden[b.id] === curMonth()) return;
+      const sp = stats.map((st) => st.by[b.id] || 0), lims = stats.map((st) => st.lims[b.id]);
+      if (sp.filter((x) => x > 0).length < 2) return;
+      const over = sp.filter((x, i) => x > lims[i]).length, max = Math.max(...sp), avg = sp.reduce((a, x) => a + x, 0) / 3;
+      if (!over) {
+        const to = niceCeil(max * 1.1);
+        if (L - to >= Math.max(10, L * 0.1)) tips.push({ b, to, save: L - to, text: `<b>${esc(b.emoji || "🫙")} ${esc(b.name)}</b> stayed under its limit for 3 months, never above ${esc(money(max))}. Lower it from ${esc(money(L))} to <b>${esc(money(to))}</b>?` });
+      } else if (over >= 2) {
+        const to = niceCeil(avg);
+        if (to > L) tips.push({ b, to, save: 0, text: `<b>${esc(b.emoji || "🫙")} ${esc(b.name)}</b> went over in ${over} of the last 3 months. A more realistic limit could be <b>${esc(money(to))}</b> (now ${esc(money(L))}).` });
+      }
+    });
+    return tips.sort((a, c) => c.save - a.save).slice(0, 3);
+  }
+  async function applyTip(id) {
+    const tip = budgetTips().find((t) => t.b.id === id); if (!tip) return;
+    await write(() => store.update("buckets", id, { limit: tip.to }), `${tip.b.name} is now ${money(tip.to)} a month`);
+  }
+  function renderMonths() {
+    const months = trackedMonths(), stats = months.map(monthStats), r = rhythm();
+    let saved = {}; try { saved = JSON.parse(lsGet("lj-stickers") || "{}") || {}; } catch {}
+    // Chart: the last 12 months, oldest on the left. Pale bar = budget, solid bar = spent.
+    const ch = stats.slice(0, 12).reverse(), n = ch.length, top = Math.max(1, ...ch.map((m) => Math.max(m.limit, m.spent)));
+    const W = 300, Hc = 120, slot = W / Math.max(n, 6), bw = Math.min(22, slot * .62), x0 = (W - slot * n) / 2;
+    const bars = ch.map((m, i) => {
+      const x = x0 + slot * i + (slot - bw) / 2, hb = (m.limit / top) * Hc, hs = (m.spent / top) * Hc;
+      const cls = m.ym === curMonth() ? "now" : m.spent > m.limit ? "over" : "";
+      const [y, mo] = m.ym.split("-").map(Number);
+      return `<rect class="bud" x="${f1(x)}" y="${f1(Hc - hb)}" width="${f1(bw)}" height="${f1(hb)}" rx="4"/><rect class="sp ${cls}" x="${f1(x + 3)}" y="${f1(Hc - hs)}" width="${f1(bw - 6)}" height="${f1(hs)}" rx="3"/>
+        <text x="${f1(x + bw / 2)}" y="${Hc + 13}" text-anchor="middle">${new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short" })}</text>`;
+    }).join("");
+    const tips = state.readOnly ? [] : budgetTips(), save = tips.reduce((a, t) => a + t.save, 0);
+    const rows = stats.map((m) => {
+      const now = m.ym === curMonth(), under = m.left >= 0;
+      const status = !(m.limit > 0) ? "" : now ? (under ? `${money(m.left)} left` : `${money(-m.left)} over`) : under ? `${money(m.left)} under 🎉` : `${money(-m.left)} over 😬`;
+      return `<button class="m-row ${now ? "current" : ""}" data-go-month="${m.ym}">
+        <div class="row-main"><b>${esc(monthName(m.ym))}</b><div class="row-meta num">${esc(money(m.spent))} of ${esc(money(m.limit))}${now ? " · so far" : ""}</div></div>
+        <span class="m-status ${!(m.limit > 0) ? "" : under ? "good" : "bad"}">${esc(status)}</span>
+      </button>`;
+    }).join("");
+    $("monthsBody").innerHTML = `
+      <div class="drawer-head"><div class="sheet-head"><h3>📅 Your months</h3><button class="x" data-close-months aria-label="Close months">×</button></div>
+        <div class="m-badges"><button class="mini" data-stickers>🏅 ${Object.keys(saved).length} of ${STICKERS.length} stickers</button>${r >= 1 ? `<button class="mini" data-rhythm>🎵 ${r}-week rhythm</button>` : ""}</div></div>
+      <div class="m-body">
+        ${n >= 2 ? `<div class="m-card m-chart"><h4>Spent vs budget</h4><svg viewBox="0 -4 ${W} ${Hc + 20}" role="img" aria-label="Spending for each month compared with the budget">${bars}</svg>
+          <div class="m-legend"><span><i style="background:var(--good)"></i>Under</span><span><i style="background:var(--danger)"></i>Over</span><span><i style="background:color-mix(in srgb, var(--ink) 10%, transparent)"></i>Budget</span></div></div>` : ""}
+        ${tips.length ? `<div class="m-card"><h4>💡 Tips for your jars</h4>
+          ${tips.map((t) => `<div class="tip"><p>${t.text}</p><div class="actions"><button class="btn" data-hide-tip="${esc(t.b.id)}">Not now</button><button class="btn primary" data-apply-tip="${esc(t.b.id)}">Make it ${esc(money(t.to))}</button></div></div>`).join("")}
+          ${save > 0 ? `<div class="row-meta">Together that frees up <b>${esc(money(save))} a month</b>. Maybe for your 🐷 Savings jar?</div>` : ""}</div>`
+        : n < 4 ? `<div class="m-card"><h4>💡 Tips for your jars</h4><div class="row-meta">After 3 full months, we'll suggest which jars could be smaller (or need a little more room).</div></div>` : ""}
+        <div>${rows}</div>
+      </div>`;
   }
 
   /* ---------- confirm dialog ---------- */
@@ -1596,7 +1721,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       const b = state.buckets.find((x) => x.id === sheet.id);
       if (!b) { closeSheet(); return; }
       const { ms, by } = totals();
-      const sp = by[b.id] || 0, lim = Number(b.limit) || 0, lf = lim - sp;
+      const sp = by[b.id] || 0, lim = limitOf(b), lf = lim - sp;
       const list = ms.filter((s) => s.bucketId === b.id).sort((a, c) => (c.date || "").localeCompare(a.date || "") || (c.createdAt || 0) - (a.createdAt || 0));
       const all = state.spends.filter((s) => s.bucketId === b.id).length;
       html = `<div class="sheet-head"><h3>${esc(b.emoji || "🫙")} ${esc(b.name)}</h3><button class="x" data-close aria-label="Close">×</button></div>
@@ -1670,7 +1795,13 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.matches("[data-confirm-scrim]") && e.target === t) return answerConfirm(false);
     if (t.dataset.ans) return answerConfirm(t.dataset.ans === "1");
     if (t.matches("[data-scrim]") && e.target === t) return closeSheet();
+    if (t.id === "drawerScrim" && monthsOpen) return closeMonths();
     if (t.id === "drawerScrim" || t.matches("[data-close-drawer]")) return closeDrawer();
+    if (t.matches("[data-close-months]")) return closeMonths();
+    if (t.id === "monthLabel") return openMonths();
+    if (t.dataset.goMonth) { state.month = t.dataset.goMonth; closeMonths(); return render(); }
+    if (t.dataset.applyTip) return applyTip(t.dataset.applyTip);
+    if (t.dataset.hideTip) { let d = {}; try { d = JSON.parse(lsGet("lj-tips-hidden") || "{}") || {}; } catch {} d[t.dataset.hideTip] = curMonth(); lsSet("lj-tips-hidden", JSON.stringify(d)); return renderMonths(); }
     if (t.matches("[data-close]")) return closeSheet();
     if (t.id === "prevMonth") { state.month = shiftMonth(state.month, -1); return render(); }
     if (t.id === "nextMonth") { state.month = shiftMonth(state.month, 1); return render(); }
@@ -1871,12 +2002,12 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     checkStickers();
   }
   function wrapData(m) {
-    const st = monthStats(m), jars = st.buckets.filter((b) => (Number(b.limit) || 0) > 0);
+    const st = monthStats(m), jars = st.buckets.filter((b) => st.lims[b.id] > 0);
     const top = [...st.buckets].sort((a, b) => (st.by[b.id] || 0) - (st.by[a.id] || 0))[0];
-    const leftFrac = (b) => 1 - (st.by[b.id] || 0) / b.limit;
+    const leftFrac = (b) => 1 - (st.by[b.id] || 0) / st.lims[b.id];
     const hero = [...jars].sort((a, b) => leftFrac(b) - leftFrac(a))[0];
-    const heroPct = hero ? Math.max(0, Math.round((1 - (st.by[hero.id] || 0) / hero.limit) * 100)) : 0;
-    const under = jars.filter((b) => (st.by[b.id] || 0) <= b.limit).length;
+    const heroPct = hero ? Math.max(0, Math.round((1 - (st.by[hero.id] || 0) / st.lims[hero.id]) * 100)) : 0;
+    const under = jars.filter((b) => (st.by[b.id] || 0) <= st.lims[b.id]).length;
     const pct = st.limit > 0 ? Math.round(Math.abs(st.left) / st.limit * 100) : 0;
     return {
       ...st, monthShort: monthName(m).split(" ")[0], count: st.ms.length, days: new Set(st.ms.map((s) => s.date)).size,
@@ -1960,7 +2091,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     } catch { toast("Couldn't save the file."); return false; }
   }
   async function backup() {
-    const data = JSON.stringify({ app: "little-jars", kind: "backup", format: 1, appVersion: APP_VERSION, exportedAt: new Date().toISOString(), currency: currency.code, buckets: state.buckets, spends: state.spends, recurring: state.recurring });
+    const data = JSON.stringify({ app: "little-jars", kind: "backup", format: 1, appVersion: APP_VERSION, exportedAt: new Date().toISOString(), currency: currency.code, buckets: state.buckets, spends: state.spends, recurring: state.recurring, months: state.months });
     if (await saveFile(`little-jars-backup-${todayStr()}.json`, "application/json", data)) {
       lsSet("lj-backup-at", String(Date.now())); mirrorSoon();
       toast("Backup saved 💾");
@@ -1987,17 +2118,20 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const ids = new Set(buckets.map(([id]) => id));
     const spends = b.spends.filter((x) => x && okId(x.id) && ids.has(x.bucketId) && isDay(x.date)).map((x) => [x.id, { bucketId: x.bucketId, amount: num(x.amount), note: str(x.note, 80), date: x.date, createdAt: num(x.createdAt, 1e14), ...(okId(x.repeat) ? { repeat: x.repeat } : {}) }]);
     const recurring = (Array.isArray(b.recurring) ? b.recurring : []).filter((x) => x && okId(x.id) && ids.has(x.bucketId)).map((x) => [x.id, { bucketId: x.bucketId, amount: num(x.amount), note: str(x.note, 80), day: Math.min(31, Math.max(1, num(x.day, 31) | 0)), lastMonth: str(x.lastMonth, 7), createdAt: num(x.createdAt, 1e14) }]);
+    const months = (Array.isArray(b.months) ? b.months : []).filter((x) => x && typeof x.id === "string" && /^\d{4}-\d{2}$/.test(x.id) && x.limits && typeof x.limits === "object")
+      .map((x) => [x.id, { limits: Object.fromEntries(Object.entries(x.limits).filter(([k]) => ids.has(k)).map(([k, v]) => [k, num(v)])), savedAt: num(x.savedAt, 1e14) }]);
     const when = b.exportedAt ? new Date(b.exportedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "an earlier day";
     const ok = await ask({ title: "Restore this backup?", text: `From ${esc(when)}: <b>${buckets.length} jar${buckets.length === 1 ? "" : "s"}</b> and <b>${spends.length} spend${spends.length === 1 ? "" : "s"}</b>. This replaces the ${state.buckets.length} jars and ${state.spends.length} spends here.`, yes: "Restore", no: "Cancel" });
     if (!ok) return;
     if (sheet) closeSheet();
     toast("Restoring…");
-    const old = { recurring: [...state.recurring], spends: [...state.spends], buckets: [...state.buckets] };
+    const old = { months: [...state.months], recurring: [...state.recurring], spends: [...state.spends], buckets: [...state.buckets] };
     const done = await write(async () => {
-      for (const col of ["recurring", "spends", "buckets"]) for (const x of old[col]) await store.remove(col, x.id);
+      for (const col of ["months", "recurring", "spends", "buckets"]) for (const x of old[col]) await store.remove(col, x.id);
       for (const [id, v] of buckets) await store.put("buckets", id, v);
       for (const [id, v] of spends) await store.put("spends", id, v);
       for (const [id, v] of recurring) await store.put("recurring", id, v);
+      for (const [id, v] of months) await store.put("months", id, v);
     });
     if (!done) return;
     if (b.currency && CURRENCIES.some((c) => c[0] === b.currency)) { setCurrencyCode(b.currency); prefs.currency = currency.code; savePrefs(); }
@@ -2089,7 +2223,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   jarsEl.addEventListener("contextmenu", (e) => { if (e.target.closest(".jar")) e.preventDefault(); });
 
   /* ---------- swipe to close: sheets slide down, the expenses drawer slides right ---------- */
+  // axis: "y" (down), "x" (right) or "x-" (left).
   function swipeToClose(getEl, axis, close, canStart) {
+    const sgn = axis === "x-" ? -1 : 1;
     let st = null;
     document.addEventListener("touchstart", (e) => {
       const el = getEl();
@@ -2103,14 +2239,14 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       if (!st.lock) {
         if (Math.hypot(dx, dy) < 10) return;
         // Only a swipe in the closing direction drags; anything else scrolls as usual.
-        const along = axis === "y" ? dy : dx, across = axis === "y" ? dx : dy;
+        const along = (axis === "y" ? dy : dx) * sgn, across = axis === "y" ? dx : dy;
         st.lock = along > 0 && Math.abs(along) > Math.abs(across) ? "drag" : "no";
         if (st.lock === "drag") st.el.style.transition = "none";
       }
       if (st.lock !== "drag") return;
-      const d = Math.max(0, axis === "y" ? dy : dx), now = Date.now();
+      const d = Math.max(0, (axis === "y" ? dy : dx) * sgn), now = Date.now();
       st.v = (d - st.lastD) / Math.max(1, now - st.lastT); st.lastD = d; st.lastT = now; st.d = d;
-      st.el.style.transform = axis === "y" ? `translateY(${d}px)` : `translateX(${d}px)`;
+      st.el.style.transform = axis === "y" ? `translateY(${d}px)` : `translateX(${d * sgn}px)`;
       if (e.cancelable) e.preventDefault();
     }, { passive: false });
     const end = () => {
@@ -2120,7 +2256,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       const size = axis === "y" ? s.el.offsetHeight : s.el.offsetWidth;
       s.el.style.transition = "transform .2s ease-out";
       if (s.d > Math.min(120, size * 0.3) || (s.v > 0.5 && s.d > 30)) {
-        s.el.style.transform = axis === "y" ? `translateY(${size}px)` : `translateX(${size + 40}px)`;
+        s.el.style.transform = axis === "y" ? `translateY(${size}px)` : `translateX(${(size + 40) * sgn}px)`;
         setTimeout(() => { close(); s.el.style.transform = ""; s.el.style.transition = ""; }, 190);
       } else {
         s.el.style.transform = "";
@@ -2134,6 +2270,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   swipeToClose(() => document.querySelector("#sheetRoot .sheet"), "y", () => closeSheet(),
     (target, el) => el.scrollTop <= 0 && !target.closest("textarea, select"));
   // Drawer: not from the jar filter chips, which scroll sideways.
+  swipeToClose(() => (monthsOpen ? $("monthsDrawer") : null), "x-", () => closeMonths(), (target) => !target.closest(".m-chart"));
   swipeToClose(() => (drawer.open ? $("drawer") : null), "x", () => closeDrawer(),
     (target) => !target.closest(".chips"));
 
@@ -2240,6 +2377,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const markLoaded = () => { if (state.loaded.buckets && state.loaded.spends) dataReadyResolve(); };
     store.subscribe("buckets", (docs) => { state.buckets = docs; state.loaded.buckets = true; render(); markLoaded(); dataChanged(); });
     store.subscribe("spends", (docs) => { state.spends = docs; state.loaded.spends = true; render(); markLoaded(); dataChanged(); });
+    store.subscribe("months", (docs) => { state.months = docs; state.loaded.months = true; render(); dataChanged(); });
     store.subscribe("recurring", (docs) => { state.recurring = docs; state.loaded.recurring = true; dataChanged(); if (sheet && ["recurring", "settings"].includes(sheet.kind)) renderSheet(); });
     if (store.watchPrefs) store.watchPrefs((p) => {
       if (p.theme && p.theme !== currentTheme()) { setTheme(p.theme); lsSet("budget-jars-theme", p.theme); }
