@@ -1227,15 +1227,15 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   }
   const tilt = (b, k) => ((hash(b.id) % 13) - 6) * k;
   const jarHome = (buckets, by) => (prefs.display === "shelf" ? shelfView : crateView)(buckets.slice(0, 10), by);
-  // A wooden crate, front view, jars poking out the top at playful angles. With more than 5 jars,
+  // A wooden crate, front view, jars standing straight up out of the top. With more than 5 jars,
   // the extras stand behind, raised and set in the gaps between the front jars.
   function crateView(show, by, pre) {
     const back = show.length > 5 ? show.slice(0, show.length - Math.ceil((show.length + 1) / 2)) : [];
     const front = show.slice(back.length);
     const fx = 30, fy = back.length ? 116 : 84, fw = 260, fh = 62, H = fy + fh + 6;
     const slot = (fw - 16) / Math.max(1, front.length), gapOff = (front.length - 1 - back.length) / 2;
-    const jars = back.map((b, i) => miniJar(b, by, fx + 8 + slot * (i + 1 + gapOff), fy - 30, Math.min(42, slot * .8), tilt(b, .9), pre)).join("")
-      + front.map((b, i) => miniJar(b, by, fx + 8 + slot * (i + .5), fy + 16, Math.min(54, slot * .86), tilt(b, 1.2), pre)).join("");
+    const jars = back.map((b, i) => miniJar(b, by, fx + 8 + slot * (i + 1 + gapOff), fy - 30, Math.min(42, slot * .8), 0, pre)).join("")
+      + front.map((b, i) => miniJar(b, by, fx + 8 + slot * (i + .5), fy + 16, Math.min(54, slot * .86), 0, pre)).join("");
     const empty = show.length ? "" : `<text class="b-print" x="${fx + fw / 2}" y="${fy - 8}" font-size="13" text-anchor="middle">Your jars go here</text>`;
     return `<svg viewBox="0 0 320 ${H}" aria-hidden="true">
         ${empty}${jars}
