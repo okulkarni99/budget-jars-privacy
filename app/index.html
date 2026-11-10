@@ -1833,7 +1833,7 @@ button.flag-opt:hover { border-color: var(--accent); }
   }
   async function onPartnerEvent(e) {
     const pi = partnerInfo();
-    if (e.type === "error") { psync.err = "Couldn't search. Check Bluetooth is on."; if (sheet && sheet.kind === "pair") renderSheet(); return; }
+    if (e.type === "error") { psync.err = "Couldn't search. Check Bluetooth and Wi-Fi are on. (Partner sync needs a phone with Bluetooth.)"; if (sheet && sheet.kind === "pair") renderSheet(); return; }
     if (psync.mode === "pair") {
       if (e.type === "found" && String(e.name).startsWith("P|")) { psync.found[e.id] = e.name.slice(2); return renderSheet(); }
       if (e.type === "lost") { delete psync.found[e.id]; return renderSheet(); }
