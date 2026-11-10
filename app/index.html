@@ -573,10 +573,44 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 .kind-opt small { color: var(--muted); font-size: .78rem; line-height: 1.3; }
 .kind-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .pill.good { background: color-mix(in srgb, var(--good) 22%, var(--surface)); color: var(--ink); }
+/* Partner sync */
+.partner-chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; height: 42px; padding: 0 12px; font-weight: 700; font-size: .85rem; display: flex; align-items: center; gap: 6px; }
+.partner-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.partner-chip i.on { background: var(--good); }
+.partner-chip.warn { background: color-mix(in srgb, var(--j5) 22%, var(--surface)); }
+#partnerSlot, #rhythmSlot { display: contents; }
+.pair-hero { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 6px 0; }
+.pair-title { font-family: var(--font-display); font-size: 1.15rem; }
+.radar { position: relative; width: 150px; height: 150px; display: grid; place-items: center; }
+.radar i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: radar 2.4s ease-out infinite; }
+.radar i:nth-child(2) { animation-delay: .8s; } .radar i:nth-child(3) { animation-delay: 1.6s; }
+@keyframes radar { from { transform: scale(.3); opacity: .6; } to { transform: scale(1); opacity: 0; } }
+.radar b { font-size: 2.8rem; z-index: 1; }
+.code { display: flex; gap: 10px; justify-content: center; }
+.code span { font-family: var(--font-display); font-weight: 700; font-size: 2.2rem; width: 52px; height: 64px; border-radius: 14px; background: var(--bg); border: 2px solid var(--line); display: grid; place-items: center; }
+.found { display: flex; align-items: center; gap: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+.found > span { font-size: 1.8rem; }
+.found b { font-family: var(--font-display); font-weight: 600; }
+.found .btn { flex: none; }
+.choice { display: grid; gap: 10px; }
+.choice-opt { display: grid; gap: 2px; text-align: left; border: 2px solid var(--line); background: var(--surface); border-radius: 16px; padding: 12px 14px; }
+.choice-opt b { font-family: var(--font-display); font-weight: 600; }
+.choice-opt small { color: var(--muted); font-size: .84rem; }
+.choice-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.privacy-note { display: flex; gap: 8px; align-items: flex-start; background: color-mix(in srgb, var(--good) 10%, var(--surface)); border-radius: 14px; padding: 10px 12px; font-size: .86rem; }
+.who { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: .62rem; font-weight: 800; color: #fff; margin-left: 6px; vertical-align: 1px; }
+.flags { display: grid; gap: 12px; }
+.flags h4 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.flag { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 16px; padding: 12px; background: color-mix(in srgb, var(--j5) 8%, var(--surface)); }
+.flag-q { font-weight: 600; font-size: .92rem; }
+.flag-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.flag-opt, .flag-one { display: grid; gap: 2px; text-align: left; border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 10px; font-size: .9rem; }
+button.flag-opt:hover { border-color: var(--accent); }
+.flag-opt small { color: var(--muted); font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
 .rate-faces { font-size: 2.6rem; text-align: center; letter-spacing: .1em; }
 
 @media (prefers-reduced-motion: reduce) {
-  .jar-art .wave, #snow, .tour-arrow, .month.fresh::after { animation: none !important; }
+  .jar-art .wave, #snow, .tour-arrow, .month.fresh::after, .radar i { animation: none !important; }
   .jar-art .liquid, .drawer, .jar { transition: none; }
   .sheet.anim, .dialog, .confetti { animation: none; }
   .confetti { display: none; }
@@ -589,7 +623,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   <header class="top">
     <div class="top-bar">
       <h1 class="brand"><img class="brand-mark" src="icons/icon-192.png" alt="" width="32" height="32">Little Jars</h1>
-      <span id="rhythmSlot"></span>
+      <span id="partnerSlot"></span><span id="rhythmSlot"></span>
       <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
     </div>
     <div class="month" role="group" aria-label="Month">
@@ -644,7 +678,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 
 <script>
 (() => {
-  const APP_VERSION = "1.3.0";
+  const APP_VERSION = "1.4.0";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
@@ -836,19 +870,30 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     };
   }
   const LOCAL_KEY = "budget-jars-v1";
+  // Every saved change is stamped (_u: when, _by: which phone) and a delete leaves a marker in
+  // _deleted, so partner sync can tell what changed on each phone since they last met.
+  const deviceId = () => { let d = lsGet("lj-device"); if (!d) { d = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); lsSet("lj-device", d); } return d; };
   function localStore() {
     let data = {};
     try { const raw = localStorage.getItem(LOCAL_KEY); if (raw) data = JSON.parse(raw) || {}; } catch {}
     const subs = {};
-    const emit = (col) => { lsSet(LOCAL_KEY, JSON.stringify(data)); mirrorSoon(); (subs[col] || []).forEach((cb) => cb(Object.entries(data[col]).map(([id, v]) => ({ id, ...v })))); };
+    const emit = (col) => { lsSet(LOCAL_KEY, JSON.stringify(data)); mirrorSoon(); partnerDirty(); (subs[col] || []).forEach((cb) => cb(Object.entries(data[col] || {}).map(([id, v]) => ({ id, ...v })))); };
     const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     const col = (c) => (data[c] = data[c] || {});
+    const stamp = (c, v) => {
+      const out = { ...v, _u: Date.now(), _by: deviceId() };
+      if (c === "spends" && !out.who && partnerInfo()) out.who = myName();
+      return out;
+    };
+    const unmark = (c, i) => { if (data._deleted && data._deleted[c]) delete data._deleted[c][i]; };
     return {
       subscribe(c, cb) { col(c); (subs[c] = subs[c] || []).push(cb); setTimeout(() => emit(c)); },
-      async add(c, v) { col(c)[id()] = v; emit(c); },
-      async put(c, i, v) { col(c)[i] = v; emit(c); },
-      async update(col, i, v) { data[col][i] = { ...data[col][i], ...v }; emit(col); },
-      async remove(col, i) { delete data[col][i]; emit(col); },
+      async add(c, v) { col(c)[id()] = stamp(c, v); emit(c); },
+      async put(c, i, v) { unmark(c, i); col(c)[i] = stamp(c, v); emit(c); },
+      async update(c, i, v) { col(c)[i] = stamp(c, { ...col(c)[i], ...v }); emit(c); },
+      async remove(c, i) { delete col(c)[i]; data._deleted = data._deleted || {}; (data._deleted[c] = data._deleted[c] || {})[i] = Date.now(); emit(c); },
+      raw: () => JSON.parse(JSON.stringify(data)),
+      replaceAll(next) { data = next; Object.keys(subs).forEach((c) => { col(c); emit(c); }); },
     };
   }
   // Android app: keep a copy of everything in a plain file that Android's own backup carries to a new
@@ -1128,7 +1173,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     handleReminderTap();
     applySkin();
     if (state.loaded.buckets && state.loaded.spends) { if (state.month > curMonth()) state.month = curMonth(); render(); nextPrompt("resume"); }
+    startAutoSync();
   });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && psync.mode === "sync") stopPartner(); });
   let changeTimer;
   function dataChanged() {
     clearTimeout(changeTimer);
@@ -1413,6 +1460,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     $("monthLabel").innerHTML = `${monthName(state.month)} <span class="caret" aria-hidden="true">▾</span>`;
     document.querySelector(".month").classList.toggle("fresh", !lsGet("lj-months-seen"));
     const rr = rhythm();
+    renderPartnerChip();
     $("rhythmSlot").innerHTML = rr >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${rr}-week logging rhythm">🎵 ${rr}</button>` : "";
     $("nextMonth").disabled = state.month >= curMonth();
     const { ms, by } = totals();
@@ -1489,7 +1537,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const edit = state.readOnly ? "" : ` data-edit-spend="${esc(s.id)}" role="button" tabindex="0" aria-label="Edit ${esc(money(Number(s.amount) || 0))}${s.note ? " " + esc(s.note) : ""}"`;
     return `<div class="row" style="--c:${bucketColor(b)}"${edit}>
       <div class="row-emoji" aria-hidden="true">${esc(b?.emoji || "🫙")}</div>
-      <div class="row-main"><div class="row-title">${s.repeat ? "🔁 " : ""}${esc(s.note || b?.name || "Spend")}</div><div class="row-meta">${esc(b?.name || "Deleted jar")}${showDate ? " · " + shortDate(s.date) : ""}</div></div>
+      <div class="row-main"><div class="row-title">${s.repeat ? "🔁 " : ""}${esc(s.note || b?.name || "Spend")}${s.who && partnerInfo() ? `<span class="who" style="background:var(--j${hash(s.who) % COLORS})" title="Added by ${esc(s.who)}">${esc([...s.who][0].toUpperCase())}</span>` : ""}</div><div class="row-meta">${esc(b?.name || "Deleted jar")}${showDate ? " · " + shortDate(s.date) : ""}</div></div>
       <div class="row-amt num">${money(Number(s.amount) || 0)}</div>
       ${state.readOnly ? "" : `<button class="row-del" data-del-spend="${esc(s.id)}" aria-label="Delete this spend">×</button>`}
     </div>`;
@@ -1611,6 +1659,324 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
       </div>`;
   }
 
+  /* ---------- partner sync: one budget on two phones, phone to phone, no internet ---------- */
+  // Android only (the "Partner" native plugin uses Google's Nearby Connections over Bluetooth and Wi-Fi).
+  // Once paired, the phones sync whenever both have Little Jars open and are near each other. The phone
+  // with the smaller device id leads: it merges both budgets and sends the result back, so both end up
+  // identical. Anything risky (both edited the same spend, one deleted what the other changed, a spend
+  // that looks logged twice, jars that disagree) is kept safe and flagged for a person to decide.
+  const PT = () => nativePlugin("Partner");
+  const partnerInfo = () => { try { return JSON.parse(lsGet("lj-partner") || "null"); } catch { return null; } };
+  const myName = () => (lsGet("lj-my-name") || "").trim() || "Me";
+  const SYNC_COLS = ["buckets", "spends", "recurring"];
+  const psync = { mode: null, found: {}, peer: null, phase: "", code: "", timer: null, cooldownUntil: 0, dirty: false, err: "" };
+  const shortHash = (str) => hash(str).toString(16).padStart(8, "0");
+  const openFlags = () => Object.entries((store && store.raw ? store.raw().flags : null) || {}).filter(([, f]) => !f.resolved).map(([id, f]) => ({ id, ...f }));
+  function partnerDirty() { psync.dirty = true; }
+  const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "now" : m < 60 ? `${m}m` : m < 1440 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`; };
+  function renderPartnerChip() {
+    const pi = partnerInfo(), el = $("partnerSlot"); if (!el) return;
+    if (!pi || !PT()) { el.innerHTML = ""; return; }
+    const n = openFlags().length, fresh = pi.lastSync && Date.now() - pi.lastSync < 864e5;
+    el.innerHTML = n ? `<button class="partner-chip warn" data-partner aria-label="${n} sync check${n === 1 ? "" : "s"} need your OK">⚠️ ${n}</button>`
+      : `<button class="partner-chip" data-partner aria-label="Partner sync with ${esc(pi.name)}"><i class="${fresh ? "on" : ""}"></i>👫 ${pi.lastSync ? ago(pi.lastSync) : "…"}</button>`;
+  }
+  const strip = (d) => { if (!d) return d; const { _u, _by, id, ...rest } = d; return rest; };
+  const canon = (d) => { const x = strip(d); return JSON.stringify(x, Object.keys(x).sort()); };
+  const sameDoc = (a, b) => canon(a) === canon(b);
+  // A doc's "signature": when it was last changed plus what it says, or when it was deleted.
+  const sigOf = (doc, tomb) => (doc ? "u" + (doc._u || 0) + ":" + hash(canon(doc)) : tomb ? "d" + tomb : "");
+  function baseOf(data) {
+    const b = {};
+    SYNC_COLS.forEach((c) => {
+      b[c] = {};
+      Object.entries(data[c] || {}).forEach(([id, d]) => (b[c][id] = sigOf(d)));
+      Object.entries((data._deleted || {})[c] || {}).forEach(([id, t]) => { if (!b[c][id]) b[c][id] = sigOf(null, t); });
+    });
+    return b;
+  }
+  // Merge two budgets. `L` is this phone (the leader), `R` the partner's. `base` is what both had after
+  // their last sync. Returns the merged budget, with any new flags added to its "flags" collection.
+  function mergeBudgets(L, R, base, names, combine) {
+    const out = { _deleted: {} }, now = Date.now(), flags = { ...(L.flags || {}) };
+    // Newest answer wins; on a tie, an answered flag beats an open one.
+    Object.entries(R.flags || {}).forEach(([id, f]) => { const l = flags[id]; if (!l || (f._u || 0) > (l._u || 0) || ((f._u || 0) === (l._u || 0) && f.resolved && !l.resolved)) flags[id] = f; });
+    const flag = (id, f) => { flags[id] = { ...f, resolved: false, _u: now, at: now }; };
+    if (combine) {
+      // Jars with the same name become one jar (the smaller id wins, so both phones agree).
+      const byName = {};
+      Object.entries(L.buckets || {}).forEach(([id, b]) => (byName[(b.name || "").trim().toLowerCase()] = id));
+      const remap = {};
+      Object.entries(R.buckets || {}).forEach(([rid, rb]) => {
+        const lid = byName[(rb.name || "").trim().toLowerCase()];
+        if (!lid || lid === rid) return;
+        const keep = lid < rid ? lid : rid, drop = keep === lid ? rid : lid;
+        const lb = L.buckets[lid], winner = keep === lid ? lb : rb, other = keep === lid ? rb : lb;
+        remap[drop] = keep;
+        if (Number(lb.limit) !== Number(rb.limit)) {
+          flag("limit-" + keep, { kind: "limit", col: "buckets", docId: keep, a: { name: names.a, doc: lb }, b: { name: names.b, doc: rb } });
+          winner.limit = Math.max(Number(lb.limit) || 0, Number(rb.limit) || 0);
+        }
+        if (keep === lid) delete R.buckets[rid]; else { R.buckets[rid] = { ...winner }; delete L.buckets[lid]; }
+        void other;
+      });
+      const fix = (data) => {
+        ["spends", "recurring"].forEach((c) => Object.values(data[c] || {}).forEach((d) => { if (remap[d.bucketId]) d.bucketId = remap[d.bucketId]; }));
+        Object.values(data.months || {}).forEach((m) => { Object.keys(m.limits || {}).forEach((k) => { if (remap[k]) { m.limits[remap[k]] = m.limits[k]; delete m.limits[k]; } }); });
+      };
+      fix(L); fix(R);
+    }
+    SYNC_COLS.forEach((c) => {
+      out[c] = {}; out._deleted[c] = {};
+      const Ld = L[c] || {}, Rd = R[c] || {}, Lt = (L._deleted || {})[c] || {}, Rt = (R._deleted || {})[c] || {}, B = (base && base[c]) || {};
+      const ids = new Set([...Object.keys(Ld), ...Object.keys(Rd), ...Object.keys(Lt), ...Object.keys(Rt)]);
+      ids.forEach((id) => {
+        const ld = Ld[id], rd = Rd[id], lt = Lt[id], rt = Rt[id], ls = sigOf(ld, lt), rs = sigOf(rd, rt), b = B[id] || "";
+        const keep = (d) => { if (d) out[c][id] = d; };
+        const tomb = () => { out._deleted[c][id] = Math.max(lt || 0, rt || 0, now); };
+        if (ls === rs) return ld ? keep(ld) : tomb();
+        const lch = ls !== b, rch = rs !== b;
+        if (!rch) return ld ? keep(ld) : tomb();
+        if (!lch) return rd ? keep(rd) : tomb();
+        // Both phones changed it since they last met.
+        if (ld && rd) {
+          const newer = (ld._u || 0) >= (rd._u || 0) ? ld : rd;
+          keep(newer);
+          if (!sameDoc(ld, rd)) flag(`edit-${c}-${id}`, { kind: "edit", col: c, docId: id, a: { name: names.a, doc: ld }, b: { name: names.b, doc: rd } });
+          return;
+        }
+        if (ld || rd) {
+          // One deleted it, the other changed it: keep it for now and ask.
+          keep(ld || rd);
+          flag(`del-${c}-${id}`, { kind: "del", col: c, docId: id, deletedBy: ld ? names.b : names.a, keptBy: ld ? names.a : names.b, doc: ld || rd });
+          return;
+        }
+        tomb();
+      });
+    });
+    // Spends that look logged twice: added on each phone since they last met, same jar, amount and day.
+    const B = (base && base.spends) || {}, fromL = {}, fromR = [];
+    Object.entries(L.spends || {}).forEach(([id, d]) => { if (!B[id] && out.spends[id] && !(R.spends || {})[id]) fromL[`${d.bucketId}|${Number(d.amount)}|${d.date}`] = id; });
+    Object.entries(R.spends || {}).forEach(([id, d]) => { if (!B[id] && out.spends[id] && !(L.spends || {})[id]) fromR.push([id, d]); });
+    fromR.forEach(([rid, rd]) => {
+      const lid = fromL[`${rd.bucketId}|${Number(rd.amount)}|${rd.date}`]; if (!lid) return;
+      const ld = out.spends[lid];
+      if (ld.repeat && ld.repeat === rd.repeat) {
+        // The same monthly repeat added on both phones: quietly keep just one.
+        const drop = lid < rid ? rid : lid; delete out.spends[drop]; out._deleted.spends[drop] = now;
+        return;
+      }
+      flag(`dup-${[lid, rid].sort().join("-")}`, { kind: "dup", col: "spends", docId: lid, docId2: rid, a: { name: names.a, doc: ld }, b: { name: names.b, doc: rd } });
+    });
+    // Month limits and flags: newest wins.
+    out.months = { ...(L.months || {}) };
+    Object.entries(R.months || {}).forEach(([id, m]) => { if (!out.months[id] || (m.savedAt || 0) > (out.months[id].savedAt || 0)) out.months[id] = m; });
+    // A flag whose spend or jar is gone needs no answer.
+    Object.entries(flags).forEach(([id, f]) => { if (!f.resolved && f.col && !out[f.col][f.docId] && f.kind !== "del") flags[id] = { ...f, resolved: true, _u: now }; });
+    out.flags = flags;
+    return out;
+  }
+  // ----- talking to the partner's phone -----
+  const sendTo = (id, msg) => PT().send({ id, data: JSON.stringify(msg) }).catch(() => {});
+  function startPolling() {
+    if (psync.timer) return;
+    psync.timer = setInterval(async () => {
+      let r; try { r = await PT().poll(); } catch { return; }
+      for (const e of (r && r.events) || []) await onPartnerEvent(e);
+    }, 400);
+  }
+  async function stopPartner() {
+    clearInterval(psync.timer); psync.timer = null; psync.mode = null; psync.found = {}; psync.peer = null;
+    try { await PT().stop(); } catch {}
+  }
+  async function askNearby() {
+    try { const r = await PT().requestAccess(); if (r && r.granted) return true; } catch {}
+    toast("Little Jars needs the Nearby devices permission to find your partner's phone.", 4000);
+    return false;
+  }
+  async function startPairing() {
+    if (!PT()) return;
+    if (!(lsGet("lj-my-name") || "").trim()) { toast("Add your name first, so your partner knows who added what."); return; }
+    if (!(await askNearby())) return;
+    await stopPartner();
+    Object.assign(psync, { mode: "pair", phase: "search", found: {}, peer: null, code: "", err: "" });
+    try { await PT().start({ name: "P|" + myName() }); } catch { psync.err = "Couldn't start looking. Check Bluetooth is on."; }
+    startPolling();
+    openSheet({ kind: "pair" });
+  }
+  // Background sync while the app is open: look for the paired phone and swap changes.
+  async function startAutoSync(force) {
+    const pi = partnerInfo();
+    if (!PT() || !pi || document.visibilityState !== "visible" || psync.mode === "pair") return;
+    if (!force && psync.mode === "sync") return;
+    if (!force && Date.now() < psync.cooldownUntil && !psync.dirty) return;
+    try { const r = await PT().requestAccess(); if (!r || !r.granted) return; } catch { return; }
+    await stopPartner();
+    Object.assign(psync, { mode: "sync", phase: "search", found: {}, peer: null });
+    try { await PT().start({ name: "S|" + pi.tag }); } catch { return; }
+    startPolling();
+    if (sheet && sheet.kind === "partner") renderSheet();
+  }
+  async function finishSync(result, base) {
+    const pi = partnerInfo(); if (!pi) return;
+    store.replaceAll(result);
+    lsSet("lj-sync-base", JSON.stringify(base));
+    lsSet("lj-partner", JSON.stringify({ ...pi, lastSync: Date.now() }));
+    psync.dirty = false; psync.cooldownUntil = Date.now() + 60000;
+    render();
+    const n = openFlags().length;
+    if (sheet && (sheet.kind === "pair" || sheet.kind === "partner")) { if (sheet.kind === "pair") closeSheet(); }
+    if (n) { toast(`👫 Synced with ${pi.name} · ${n} thing${n === 1 ? "" : "s"} need${n === 1 ? "s" : ""} your OK`, 4000); }
+    else if (psync.announce) toast(`👫 Synced with ${pi.name}`);
+    psync.announce = false;
+    if (sheet && sheet.kind === "partner") renderSheet();
+  }
+  async function onPartnerEvent(e) {
+    const pi = partnerInfo();
+    if (e.type === "error") { psync.err = "Couldn't search. Check Bluetooth is on."; if (sheet && sheet.kind === "pair") renderSheet(); return; }
+    if (psync.mode === "pair") {
+      if (e.type === "found" && String(e.name).startsWith("P|")) { psync.found[e.id] = e.name.slice(2); return renderSheet(); }
+      if (e.type === "lost") { delete psync.found[e.id]; return renderSheet(); }
+      if (e.type === "auth") { psync.peer = { id: e.id, name: String(e.name || "").replace(/^P\|/, "") }; psync.code = String(e.code || ""); psync.phase = "code"; return renderSheet(); }
+      if (e.type === "rejected") { psync.phase = "search"; psync.err = "The codes didn't match, or your partner said no. Try again."; return renderSheet(); }
+      if (e.type === "connected") { psync.phase = "hello"; sendTo(e.id, { t: "hello", dev: deviceId(), name: myName(), pairId: shortHash(deviceId() + Math.random()) + shortHash(String(Date.now())) }); return renderSheet(); }
+      if (e.type === "disconnected") { if (psync.phase !== "done") { psync.phase = "search"; psync.err = "Lost the connection. Keep your phones close and try again."; } return renderSheet(); }
+      if (e.type === "message") {
+        let m; try { m = JSON.parse(e.data); } catch { return; }
+        if (m.t === "hello") {
+          const lead = deviceId() < m.dev;
+          psync.peer = { ...psync.peer, id: e.id, dev: m.dev, name: m.name, lead, pairId: lead ? psync.myPair || m.pairId : m.pairId };
+          // Both phones settle on the leader's pairing id.
+          if (lead) { psync.peer.pairId = shortHash(deviceId() + m.dev) + shortHash(m.dev + deviceId()); }
+          else psync.peer.pairId = shortHash(m.dev + deviceId()) + shortHash(deviceId() + m.dev);
+          psync.phase = lead ? "choose" : "waitchoice";
+          return renderSheet();
+        }
+        if (m.t === "state" && psync.peer && psync.peer.lead) {
+          // Leader: first merge, using the choice made on this phone.
+          const L = store.raw(), R = m.data, names = { a: myName(), b: psync.peer.name };
+          let result;
+          if (psync.choice === "theirs") result = R;
+          else if (psync.choice === "mine") result = L;
+          else result = mergeBudgets(L, R, null, names, true);
+          result.flags = result.flags || {};
+          await sendTo(e.id, { t: "merged", data: result, choice: psync.choice });
+          lsSet("lj-partner", JSON.stringify({ pairId: psync.peer.pairId, tag: shortHash(psync.peer.pairId), name: psync.peer.name, dev: psync.peer.dev, since: Date.now(), lastSync: 0 }));
+          if (psync.choice === "theirs") lsSet("lj-pre-partner-backup", JSON.stringify(L));
+          const peerName = psync.peer.name;
+          psync.phase = "done";
+          await finishSync(result, baseOf(result));
+          { const n = openFlags().length; toast(`👫 You and ${peerName} now share one budget 🎉${n ? ` · ${n} thing${n === 1 ? "" : "s"} to check` : ""}`, 4500); }
+          setTimeout(() => startAutoSync(), 62000);
+          return;
+        }
+        if (m.t === "start" && psync.peer && !psync.peer.lead) {
+          psync.phase = "syncing"; renderSheet();
+          return sendTo(e.id, { t: "state", data: store.raw() });
+        }
+        if (m.t === "merged" && psync.peer && !psync.peer.lead) {
+          const before = store.raw();
+          if (m.choice === "mine") lsSet("lj-pre-partner-backup", JSON.stringify(before));
+          lsSet("lj-partner", JSON.stringify({ pairId: psync.peer.pairId, tag: shortHash(psync.peer.pairId), name: psync.peer.name, dev: psync.peer.dev, since: Date.now(), lastSync: 0 }));
+          const peerName = psync.peer.name;
+          psync.phase = "done";
+          await finishSync(m.data, baseOf(m.data));
+          { const n = openFlags().length; toast(`👫 You and ${peerName} now share one budget 🎉${n ? ` · ${n} thing${n === 1 ? "" : "s"} to check` : ""}`, 4500); }
+          sendTo(e.id, { t: "done" });
+          setTimeout(stopPartner, 1500);
+          setTimeout(() => startAutoSync(), 62000);
+          return;
+        }
+        if (m.t === "done") { setTimeout(stopPartner, 500); }
+      }
+      return;
+    }
+    if (psync.mode === "sync" && pi) {
+      const mine = "S|" + pi.tag;
+      if (e.type === "found" && e.name === mine && deviceId() < pi.dev && !psync.peer) {
+        psync.peer = { id: e.id }; psync.phase = "connecting";
+        try { await PT().connect({ id: e.id, name: mine }); } catch { psync.peer = null; }
+        return;
+      }
+      if (e.type === "auth") {
+        if (e.name === mine) { psync.peer = { id: e.id }; try { await PT().accept({ id: e.id }); } catch {} }
+        else { try { await PT().reject({ id: e.id }); } catch {} }
+        return;
+      }
+      if (e.type === "connected") {
+        psync.phase = "syncing"; if (sheet && sheet.kind === "partner") renderSheet();
+        if (deviceId() > pi.dev) sendTo(e.id, { t: "state", pairId: pi.pairId, data: store.raw() });
+        return;
+      }
+      if (e.type === "disconnected") { psync.peer = null; psync.phase = "search"; return; }
+      if (e.type === "message") {
+        let m; try { m = JSON.parse(e.data); } catch { return; }
+        if (m.pairId && m.pairId !== pi.pairId) return;
+        if (m.t === "state" && deviceId() < pi.dev) {
+          let base = {}; try { base = JSON.parse(lsGet("lj-sync-base") || "{}"); } catch {}
+          const result = mergeBudgets(store.raw(), m.data, base, { a: myName(), b: pi.name }, false);
+          await sendTo(e.id, { t: "merged", pairId: pi.pairId, data: result });
+          await finishSync(result, baseOf(result));
+          return;
+        }
+        if (m.t === "merged" && deviceId() > pi.dev) {
+          await finishSync(m.data, baseOf(m.data));
+          sendTo(e.id, { t: "done", pairId: pi.pairId });
+          setTimeout(async () => { await stopPartner(); setTimeout(() => startAutoSync(), 61000); }, 1200);
+          return;
+        }
+        if (m.t === "done") setTimeout(async () => { await stopPartner(); setTimeout(() => startAutoSync(), 61000); }, 500);
+      }
+    }
+  }
+  // Answering a flag changes the budget like any edit, so the answer syncs to the partner too.
+  async function resolveFlag(id, answer) {
+    const f = (store.raw().flags || {})[id]; if (!f) return;
+    const done = () => store.put("flags", id, { ...f, resolved: true, answer });
+    if (f.kind === "edit" || f.kind === "limit") {
+      const pick = answer === "a" ? f.a.doc : f.b.doc, now = store.raw()[f.col][f.docId];
+      if (f.kind === "limit") await write(() => store.update("buckets", f.docId, { limit: Number(pick.limit) || 0 }));
+      else if (!now || !sameDoc(now, pick)) await write(() => store.put(f.col, f.docId, strip(pick)));
+    } else if (f.kind === "del") {
+      if (answer === "delete") await write(() => store.remove(f.col, f.docId));
+    } else if (f.kind === "dup") {
+      if (answer === "one") {
+        const a = store.raw().spends[f.docId], b = store.raw().spends[f.docId2];
+        const drop = a && b ? ((a.createdAt || 0) > (b.createdAt || 0) ? f.docId : f.docId2) : null;
+        if (drop) await write(() => store.remove("spends", drop));
+      }
+    }
+    await done();
+    render(); if (sheet) renderSheet();
+  }
+  async function unpair() {
+    const pi = partnerInfo(); if (!pi) return;
+    const ok = await ask({ title: `Stop sharing with ${esc(pi.name)}?`, text: "Your phones will stop syncing. Each phone keeps its own copy of the budget as it is now.", yes: "Stop sharing", no: "Keep sharing" });
+    if (!ok) return;
+    await stopPartner();
+    ["lj-partner", "lj-sync-base"].forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+    toast("Partner sync is off"); render(); if (sheet) renderSheet();
+  }
+  function flagCard(f) {
+    const sp = (d) => { if (!d) return ""; const b = state.buckets.find((x) => x.id === d.bucketId); return `<b class="num">${esc(money(Number(d.amount) || 0))}</b> ${esc(d.note || (b ? b.name : ""))}<div class="row-meta">${esc(b ? `${b.emoji || "🫙"} ${b.name}` : "")} · ${d.date ? shortDate(d.date) : ""}</div>`; };
+    const jar = (d) => d ? `<b>${esc(d.emoji || "🫙")} ${esc(d.name)}</b><div class="row-meta">${esc(money(Number(d.limit) || 0))} a month</div>` : "";
+    const show = (d) => (f.col === "buckets" ? jar(d) : f.col === "spends" ? sp(d) : `<b class="num">${esc(money(Number(d.amount) || 0))}</b> ${esc(d.note || "")}<div class="row-meta">Repeats on the ${ordinal(Number(d.day) || 1)}</div>`);
+    const what = f.col === "buckets" ? "jar" : f.col === "spends" ? "spend" : "monthly repeat";
+    // Flags are written from the leading phone's side; word them for whoever is reading.
+    const me = myName(), them = f.a && f.b ? (f.a.name === me ? f.b.name : f.a.name) : partnerInfo() ? partnerInfo().name : "your partner";
+    const who = (n) => (n === me ? "You" : esc(n)), whoLow = (n) => (n === me ? "you" : esc(n)), label = (n) => (n === me ? "Yours" : `${esc(n)}'s`);
+    if (f.kind === "edit" || f.kind === "limit") return `<div class="flag"><div class="flag-q">✏️ ${f.kind === "limit" ? `You both have a <b>${esc(f.a.doc.name)}</b> jar with different limits. Which one?` : `You and ${esc(them)} both changed this ${what}. Which is right?`}</div>
+      <div class="flag-opts"><button class="flag-opt" data-flag="${esc(f.id)}" data-ans="a"><small>${label(f.a.name)}</small>${f.kind === "limit" ? `<b class="num">${esc(money(Number(f.a.doc.limit) || 0))}</b>` : show(f.a.doc)}</button>
+      <button class="flag-opt" data-flag="${esc(f.id)}" data-ans="b"><small>${label(f.b.name)}</small>${f.kind === "limit" ? `<b class="num">${esc(money(Number(f.b.doc.limit) || 0))}</b>` : show(f.b.doc)}</button></div></div>`;
+    if (f.kind === "del") return `<div class="flag"><div class="flag-q">🗑️ ${who(f.deletedBy)} deleted this ${what}, but ${whoLow(f.keptBy)} changed it. Keep it?</div>
+      <div class="flag-one">${show(f.doc)}</div>
+      <div class="actions"><button class="btn danger" data-flag="${esc(f.id)}" data-ans="delete">Delete it</button><button class="btn primary" data-flag="${esc(f.id)}" data-ans="keep">Keep it</button></div></div>`;
+    if (f.kind === "dup") return `<div class="flag"><div class="flag-q">👯 Did you both log this? It looks the same on both phones.</div>
+      <div class="flag-opts"><div class="flag-opt static"><small>${label(f.a.name)}</small>${sp(f.a.doc)}</div><div class="flag-opt static"><small>${label(f.b.name)}</small>${sp(f.b.doc)}</div></div>
+      <div class="actions"><button class="btn" data-flag="${esc(f.id)}" data-ans="both">Keep both</button><button class="btn primary" data-flag="${esc(f.id)}" data-ans="one">It's the same, keep one</button></div></div>`;
+    return "";
+  }
+
   /* ---------- confirm dialog ---------- */
   let confirmResolve = null;
   function ask({ title, text, yes = "Delete", no = "Keep it", danger = true }) {
@@ -1649,6 +2015,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     sheet = null; $("sheetRoot").innerHTML = "";
     if (!fromPop) popLayer("sheet");
     if (was === "due") dueDismissed = true;
+    if (was === "pair" && psync.mode === "pair") stopPartner();
     if (["whatsnew", "remindAsk", "wrap", "due"].includes(was)) nextPrompt(was);
     if (was === "wrap") happyMoment();
   }
@@ -1755,6 +2122,15 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
             <div class="homes">${[["crate", "📦 In a crate", crateView], ["shelf", "🪵 On a shelf", shelfView]].map(([id, label, view]) => `<button class="home-opt" data-display="${id}" aria-pressed="${prefs.display === id}"><span class="home-prev jarbox" aria-hidden="true">${view(demo, demoBy, `cp-${id}-`)}</span><b>${label}</b></button>`).join("")}</div>
           </div>
           <div class="set-row"><span>🎉 Festive mode<small>${fa ? `Showing the ${esc(THEMES.find((t) => t.id === fa.skin).name)} theme for ${esc(fa.name)}, until ${fa.until.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : f ? `Taking a break for ${esc(f.name)} since you picked a theme` : "Dresses up for Diwali, Thanksgiving and the holidays, then switches back"}</small></span><span class="switch"><input type="checkbox" id="festiveToggle" aria-label="Festive mode" ${prefs.festive ? "checked" : ""}><i></i></span></div>`)}
+        ${PT() ? section("partner", "👫", "Share with partner", partnerInfo() ? `With ${esc(partnerInfo().name)}${openFlags().length ? " · ⚠️" : ""}` : "Not paired", partnerInfo() ? `
+          <p style="margin:0">Shared with <b>${esc(partnerInfo().name)}</b>. Your phones sync whenever both have Little Jars open and are close by.</p>
+          <button class="btn" data-partner style="text-align:left">👫 Sync status${openFlags().length ? ` · ⚠️ ${openFlags().length} need your OK` : ""}</button>
+          <label class="f">Your name <input class="t" id="myName" maxlength="20" value="${esc(lsGet("lj-my-name") || "")}"></label>` : `
+          <p style="margin:0">Keep one budget together. When your phones are close, they quietly swap new spends, so you both see the same jars.</p>
+          <div class="privacy-note"><span aria-hidden="true">🔒</span><span><b>No internet, no cloud.</b> Your budget travels phone to phone over Bluetooth and Wi-Fi, and never leaves your two phones.</span></div>
+          <label class="f">Your name <input class="t" id="myName" maxlength="20" placeholder="So your partner knows who added what" value="${esc(lsGet("lj-my-name") || "")}"></label>
+          <button class="btn primary" data-pair>👫 Pair with my partner</button>
+          <div class="row-meta">Your partner taps the same button on their phone. Both phones need Little Jars open.</div>`) : ""}
         ${section("money", "💱", "Currency", currency.code, `
           <select class="t" id="curSel" aria-label="Currency">${CURRENCIES.map(([code, name]) => `<option value="${code}" ${code === currency.code ? "selected" : ""}>${code} · ${name}</option>`).join("")}</select>
           <span class="row-meta">Example: ${esc(money(1234.5))}. Changing currency relabels your amounts; it doesn't convert them.</span>`)}
@@ -1790,13 +2166,11 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         </form>`;
     } else if (sheet.kind === "whatsnew") {
       const items = [
-        ["📅", "Tap the <b>month</b> at the top to see all your months, a spending chart, and tips to fine-tune your jars."],
-        ["🏦", "<b>Saving jars</b> for bills that come every few months, like insurance. They fill up a little each month, so the bill never stings."],
-        ["🔄", "<b>Roll over leftovers</b>: turn it on for any jar and unspent money carries into next month."],
-        ["📦", "Your jars now live in a <b>crate</b> or on a <b>shelf</b>. Pick in Settings → Theme."],
-        ["🧹", "A calmer home screen, and Settings tidied into sections."],
-        ["👆", "Swipe down to close pop-ups, and swipe right to close Expenses."],
-        ["🎶", "Tap your 🎵 rhythm for a little tune, and hit <b>Yay!</b> on a good Jar Wrap for a cheer."],
+        ...(PT() ? [["👫", "<b>Share your budget with your partner.</b> Pair your phones once in Settings → Share with partner, and they sync whenever they're close by."],
+          ["🔒", "No internet, no cloud: your budget travels phone to phone over Bluetooth and Wi-Fi."],
+          ["⚠️", "If your phones disagree (you both edited the same spend, or logged the same thing twice), we keep everything safe and ask you which is right."],
+          ["🅾️", "Every spend shows a little initial, so you can see who added what."]]
+          : [["🫙", "Small fixes and polish to keep your jars happy."]]),
       ];
       html = `<div class="sheet-head"><h3>Psst… we've been busy ✨</h3><button class="x" data-close aria-label="Close">×</button></div>
         <ul class="news">${items.map(([e, t]) => `<li><span aria-hidden="true">${e}</span><div>${t}</div></li>`).join("")}</ul>
@@ -1852,6 +2226,36 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
         <div class="rate-faces" aria-hidden="true">🫙💛</div>
         <p style="margin:0;text-align:center">You've been filling your jars for a while now. How's it going?</p>
         <div class="actions"><button class="btn" data-rate-no>Not really</button><button class="btn primary" data-rate-yes>Love it! 😍</button></div>`;
+    } else if (sheet.kind === "pair") {
+      const ph = psync.phase, found = Object.entries(psync.found), pn = psync.peer && psync.peer.name ? esc(psync.peer.name) : "your partner";
+      const head = `<div class="sheet-head"><h3>👫 ${ph === "search" ? "Pair with your partner" : ph === "choose" || ph === "waitchoice" || ph === "syncing" ? `Paired with ${pn}` : `Pair with ${pn}`}</h3><button class="x" data-close aria-label="Close">×</button></div>`;
+      if (ph === "search") html = `${head}<div class="pair-hero"><div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>📱</b></div>
+          <b class="pair-title">Looking for your partner's phone…</b>
+          <div class="row-meta">Ask them to open Little Jars → Settings → Share with partner → <b>Pair with my partner</b>. Keep your phones close.</div></div>
+          ${psync.err ? `<div class="err">${esc(psync.err)}</div>` : ""}
+          ${found.map(([id, name]) => `<div class="found"><span aria-hidden="true">📱</span><div class="row-main"><b>${esc(name)}'s phone</b><div class="row-meta">Found nearby</div></div><button class="btn primary" data-pair-connect="${esc(id)}">Connect</button></div>`).join("")}`;
+      else if (ph === "code") html = `${head}<div class="pair-hero"><div class="row-meta">Check that both phones show the same code:</div>
+          <div class="code" aria-label="Code ${esc(psync.code.split("").join(" "))}">${psync.code.split("").map((c) => `<span>${esc(c)}</span>`).join("")}</div>
+          <div class="row-meta">This makes sure you're pairing with the right phone. You only do this once.</div></div>
+          <div class="actions"><button class="btn" data-pair-code="no">Codes don't match</button><button class="btn primary" data-pair-code="yes">They match!</button></div>`;
+      else if (ph === "waiting" || ph === "hello") html = `${head}<div class="pair-hero"><div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>🤝</b></div><b class="pair-title">Waiting for ${pn} to confirm…</b></div>`;
+      else if (ph === "choose") html = `${head}<p style="margin:0">You're paired with <b>${pn}</b> 🎉 Pick how to set up your shared budget:</p>
+          <div class="choice">${[["combine", "Combine our budgets", "Jars with the same name become one jar. All spends from both phones are kept, and we'll ask about anything that looks doubled."],
+            ["theirs", `Use ${pn}'s budget`, `This phone switches to ${pn}'s jars and spends. Yours are backed up first.`],
+            ["mine", "Use my budget", `${pn}'s phone switches to your jars and spends. Theirs are backed up first.`]].map(([v, t, d]) => `<button class="choice-opt" data-pair-choice="${v}" aria-pressed="${(psync.choice || "combine") === v}"><b>${t}</b><small>${d}</small></button>`).join("")}</div>
+          <div class="actions"><button class="btn primary" data-pair-start>Start our shared budget</button></div>`;
+      else if (ph === "waitchoice") html = `${head}<div class="pair-hero"><div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>👫</b></div><b class="pair-title">${pn} is choosing how to set up your shared budget…</b><div class="row-meta">Keep your phones close for a moment.</div></div>`;
+      else html = `${head}<div class="pair-hero"><div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>🔄</b></div><b class="pair-title">Setting up your shared budget…</b></div>`;
+    } else if (sheet.kind === "partner") {
+      const pi = partnerInfo(), flags = openFlags();
+      if (!pi) { closeSheet(); return; }
+      const status = psync.mode === "sync" && psync.phase === "syncing" ? "Syncing now…" : psync.mode === "sync" ? `Looking for ${esc(pi.name)}'s phone. Keep Little Jars open on both phones.` : "";
+      html = `<div class="sheet-head"><h3>👫 Shared with ${esc(pi.name)}</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <div class="row-meta">${pi.lastSync ? `Last synced ${ago(pi.lastSync) === "now" ? "just now" : ago(pi.lastSync) + " ago"}.` : "Not synced yet."} ${status}</div>
+        ${flags.length ? `<div class="flags"><h4>Needs your OK (${flags.length})</h4><p class="row-meta" style="margin:0">Your phones didn't agree on these. Nothing is lost: we kept a version of each until you decide.</p>${flags.map(flagCard).join("")}</div>`
+          : `<div class="privacy-note"><span aria-hidden="true">✅</span><span>Everything matches. Your budget travels phone to phone, never through the internet.</span></div>`}
+        <div class="actions"><button class="btn primary" data-sync-now>🔄 Sync now</button></div>
+        <button class="link-btn" data-unpair style="color:var(--danger);justify-self:start">Stop sharing</button>`;
     } else if (sheet.kind === "remindAsk") {
       html = `<div class="sheet-head"><h3>🌙 Want a gentle nudge?</h3><button class="x" data-close aria-label="Close">×</button></div>
         <p style="margin:0">We can send one friendly reminder at <b>9 PM</b> to log your spends. No nagging, promise. You can change the time or turn it off in Settings.</p>
@@ -1911,6 +2315,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.id === "bkName") sheet.draft.name = t.value;
     if (t.id === "ftIdea") sheet.idea = t.value;
     if (t.id === "ftName") sheet.name = t.value;
+    if (t.id === "myName") lsSet("lj-my-name", t.value.trim());
   });
   function refreshAside() {
     const d = sheet.draft, s = suggestAside(d);
@@ -1948,7 +2353,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     const t = e.target.closest("button, [data-open], [data-edit-spend], [data-scrim], [data-confirm-scrim], #drawerScrim");
     if (!t) return;
     if (t.matches("[data-confirm-scrim]") && e.target === t) return answerConfirm(false);
-    if (t.dataset.ans) return answerConfirm(t.dataset.ans === "1");
+    if (t.dataset.ans && !t.dataset.flag) return answerConfirm(t.dataset.ans === "1");
     if (t.matches("[data-scrim]") && e.target === t) return closeSheet();
     if (t.id === "drawerScrim" && monthsOpen) return closeMonths();
     if (t.id === "drawerScrim" || t.matches("[data-close-drawer]")) return closeDrawer();
@@ -1977,6 +2382,20 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (t.dataset.every) { sheet.draft.every = t.dataset.every; return renderSheet(); }
     if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; sheet.error = ""; return renderSheet(); }
     if (t.dataset.move) { await moveBucket(sheet.id, Number(t.dataset.move)); return renderSheet(); }
+    if (t.matches("[data-pair]")) return startPairing();
+    if (t.dataset.pairConnect) { psync.phase = "waiting"; renderSheet(); try { await PT().connect({ id: t.dataset.pairConnect, name: "P|" + myName() }); } catch { psync.phase = "search"; psync.err = "Couldn't connect. Try again."; renderSheet(); } return; }
+    if (t.dataset.pairCode) {
+      const id = psync.peer && psync.peer.id; if (!id) return;
+      if (t.dataset.pairCode === "yes") { psync.phase = "waiting"; renderSheet(); try { await PT().accept({ id }); } catch {} }
+      else { try { await PT().reject({ id }); } catch {} psync.phase = "search"; renderSheet(); }
+      return;
+    }
+    if (t.dataset.pairChoice) { psync.choice = t.dataset.pairChoice; return renderSheet(); }
+    if (t.matches("[data-pair-start]")) { psync.choice = psync.choice || "combine"; psync.phase = "syncing"; renderSheet(); return sendTo(psync.peer.id, { t: "start", choice: psync.choice }); }
+    if (t.matches("[data-partner]")) { startAutoSync(); return openSheet({ kind: "partner" }); }
+    if (t.matches("[data-sync-now]")) { psync.announce = true; psync.cooldownUntil = 0; startAutoSync(true); return renderSheet(); }
+    if (t.matches("[data-unpair]")) return unpair();
+    if (t.dataset.flag) return resolveFlag(t.dataset.flag, t.dataset.ans);
     if (t.dataset.acc) { sheet.open = sheet.open === t.dataset.acc ? null : t.dataset.acc; return renderSheet(); }
     if (t.dataset.display) { prefs.display = t.dataset.display; savePrefs(); render(); return renderSheet(); }
     if (t.dataset.pickTheme) { setTheme(t.dataset.pickTheme, true); savePrefs(); checkStickers(); return renderSheet(); }
@@ -2562,6 +2981,7 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
     if (restored) toast("Welcome back! Your jars came along to this phone 📲", 4000);
     await runOnboarding();
     dataReady.then(() => syncReminder());
+    dataReady.then(() => setTimeout(startAutoSync, 1500));
     handleReminderTap();
   }
   boot();
