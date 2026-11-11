@@ -1799,7 +1799,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (!(lsGet("lj-my-name") || "").trim()) { toast("Add your name first, so your partner knows who added what."); return; }
     if (!(await askNearby())) return;
     await stopPartner();
-    Object.assign(psync, { mode: "pair", phase: "search", found: {}, peer: null, code: "", err: "" });
+    Object.assign(psync, { mode: "pair", phase: "search", found: {}, peer: null, code: "", err: "", failedOnce: false });
     try { await PT().start({ name: "P|" + myName() }); } catch { psync.err = "Couldn't start looking. Check Bluetooth is on."; }
     startPolling();
     openSheet({ kind: "pair" });
@@ -1812,7 +1812,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (!force && Date.now() < psync.cooldownUntil && !psync.dirty) return;
     try { const r = await PT().requestAccess(); if (!r || !r.granted) return; } catch { return; }
     await stopPartner();
-    Object.assign(psync, { mode: "sync", phase: "search", found: {}, peer: null });
+    Object.assign(psync, { mode: "sync", phase: "search", found: {}, peer: null, failedOnce: false });
     try { await PT().start({ name: "S|" + pi.tag }); } catch { return; }
     startPolling();
     if (sheet && sheet.kind === "partner") renderSheet();
@@ -1831,9 +1831,32 @@ button.flag-opt:hover { border-color: var(--accent); }
     psync.announce = false;
     if (sheet && sheet.kind === "partner") renderSheet();
   }
+  // Searching failed. Android often wants location permission (or Location switched on) to scan for
+  // nearby phones, so ask for it once and try again; otherwise explain, with Android's reason code.
+  async function partnerError(e) {
+    const code = Number(e.code), msg = String(e.message || "");
+    if (psync.failedOnce) return;
+    psync.failedOnce = true;
+    const needsLocation = /LOCATION/i.test(msg) || code === 8034 || code === 8033;
+    if (needsLocation && !psync.askedLocation) {
+      psync.askedLocation = true;
+      let ok = false; try { ok = !!(await PT().requestLocation()).granted; } catch {}
+      if (ok) {
+        psync.failedOnce = false;
+        const mode = psync.mode;
+        await stopPartner();
+        if (mode === "pair") return startPairing();
+        return startAutoSync(true);
+      }
+      psync.err = "Little Jars needs location access to find nearby phones (your location isn't used or saved). Allow it in Settings → Apps → Little Jars → Permissions.";
+    } else {
+      psync.err = `Couldn't search for nearby phones${isFinite(code) && code > 0 ? ` (code ${code})` : ""}. Check that Bluetooth, Wi-Fi and Location are switched on, then try again.`;
+    }
+    if (sheet && (sheet.kind === "pair" || sheet.kind === "partner")) renderSheet();
+  }
   async function onPartnerEvent(e) {
     const pi = partnerInfo();
-    if (e.type === "error") { psync.err = "Couldn't search. Check Bluetooth and Wi-Fi are on. (Partner sync needs a phone with Bluetooth.)"; if (sheet && sheet.kind === "pair") renderSheet(); return; }
+    if (e.type === "error") return partnerError(e);
     if (psync.mode === "pair") {
       if (e.type === "found" && String(e.name).startsWith("P|")) { psync.found[e.id] = e.name.slice(2); return renderSheet(); }
       if (e.type === "lost") { delete psync.found[e.id]; return renderSheet(); }
@@ -2251,6 +2274,7 @@ button.flag-opt:hover { border-color: var(--accent); }
       if (!pi) { closeSheet(); return; }
       const status = psync.mode === "sync" && psync.phase === "syncing" ? "Syncing now…" : psync.mode === "sync" ? `Looking for ${esc(pi.name)}'s phone. Keep Little Jars open on both phones.` : "";
       html = `<div class="sheet-head"><h3>👫 Shared with ${esc(pi.name)}</h3><button class="x" data-close aria-label="Close">×</button></div>
+        ${psync.err && psync.mode !== "pair" ? `<div class="err">${esc(psync.err)}</div>` : ""}
         <div class="row-meta">${pi.lastSync ? `Last synced ${ago(pi.lastSync) === "now" ? "just now" : ago(pi.lastSync) + " ago"}.` : "Not synced yet."} ${status}</div>
         ${flags.length ? `<div class="flags"><h4>Needs your OK (${flags.length})</h4><p class="row-meta" style="margin:0">Your phones didn't agree on these. Nothing is lost: we kept a version of each until you decide.</p>${flags.map(flagCard).join("")}</div>`
           : `<div class="privacy-note"><span aria-hidden="true">✅</span><span>Everything matches. Your budget travels phone to phone, never through the internet.</span></div>`}
