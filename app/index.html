@@ -182,7 +182,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text
 .cjar .c-shine { fill: #FFFFFF; opacity: .55; }
 .cjar .c-neck { fill: color-mix(in srgb, var(--c) 30%, var(--surface)); }
 .cjar .c-lid { fill: color-mix(in srgb, var(--c) 60%, #222); }
-.rhythm-chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; height: 42px; padding: 0 14px; font-weight: 700; font-size: .95rem; }
+
 .box-sticker .sticker-sub { font-size: .8rem; font-weight: 600; color: #7A6650; margin-top: 1px; }
 .pace b { color: var(--ink); }
 .lid-g { cursor: pointer; }
@@ -574,8 +574,9 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
 .kind-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .pill.good { background: color-mix(in srgb, var(--good) 22%, var(--surface)); color: var(--ink); }
 /* Partner sync */
-.partner-chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; height: 42px; padding: 0 12px; font-weight: 700; font-size: .85rem; display: flex; align-items: center; gap: 6px; }
-.partner-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+/* Header chips (partner sync, rhythm) share one layout so emoji and text sit centered on every phone. */
+.partner-chip, .rhythm-chip { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 42px; padding: 0 13px; line-height: 1; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; font-weight: 700; font-size: .9rem; white-space: nowrap; }
+.partner-chip i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .partner-chip i.on { background: var(--good); }
 .partner-chip.warn { background: color-mix(in srgb, var(--j5) 22%, var(--surface)); }
 #partnerSlot, #rhythmSlot { display: contents; }
@@ -1461,7 +1462,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     document.querySelector(".month").classList.toggle("fresh", !lsGet("lj-months-seen"));
     const rr = rhythm();
     renderPartnerChip();
-    $("rhythmSlot").innerHTML = rr >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${rr}-week logging rhythm">🎵 ${rr}</button>` : "";
+    $("rhythmSlot").innerHTML = rr >= 2 ? `<button class="rhythm-chip" data-rhythm aria-label="${rr}-week logging rhythm"><span aria-hidden="true">🎵</span><span>${rr}</span></button>` : "";
     $("nextMonth").disabled = state.month >= curMonth();
     const { ms, by } = totals();
     const buckets = sortedBuckets();
@@ -1678,8 +1679,8 @@ button.flag-opt:hover { border-color: var(--accent); }
     const pi = partnerInfo(), el = $("partnerSlot"); if (!el) return;
     if (!pi || !PT()) { el.innerHTML = ""; return; }
     const n = openFlags().length, fresh = pi.lastSync && Date.now() - pi.lastSync < 864e5;
-    el.innerHTML = n ? `<button class="partner-chip warn" data-partner aria-label="${n} sync check${n === 1 ? "" : "s"} need your OK">⚠️ ${n}</button>`
-      : `<button class="partner-chip" data-partner aria-label="Partner sync with ${esc(pi.name)}"><i class="${fresh ? "on" : ""}"></i>👫 ${pi.lastSync ? ago(pi.lastSync) : "…"}</button>`;
+    el.innerHTML = n ? `<button class="partner-chip warn" data-partner aria-label="${n} sync check${n === 1 ? "" : "s"} need your OK"><span aria-hidden="true">⚠️</span><span>${n}</span></button>`
+      : `<button class="partner-chip" data-partner aria-label="Partner sync with ${esc(pi.name)}"><i class="${fresh ? "on" : ""}"></i><span aria-hidden="true">👫</span><span>${pi.lastSync ? ago(pi.lastSync) : "…"}</span></button>`;
   }
   const strip = (d) => { if (!d) return d; const { _u, _by, id, ...rest } = d; return rest; };
   const canon = (d) => { const x = strip(d); return JSON.stringify(x, Object.keys(x).sort()); };
