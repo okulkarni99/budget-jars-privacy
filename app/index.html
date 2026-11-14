@@ -382,7 +382,12 @@ input.amount { font-family: var(--font-display); font-size: 2.4rem; font-weight:
   border: 2px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px;
   font-weight: 600; display: flex; align-items: center; gap: 6px;
 }
-.chip[aria-pressed="true"] { border-color: var(--c, var(--accent)); background: color-mix(in srgb, var(--c, var(--accent)) 16%, var(--surface)); }
+/* A picked chip is filled in its color with a ✓, so it never looks like it still needs a tap. */
+.chip[aria-pressed="true"] { border-color: var(--c, var(--accent)); background: var(--c, var(--accent)); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.chip[aria-pressed="true"]::after { content: "✓"; font-weight: 800; margin-left: 2px; }
+@keyframes flashIn { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); border-color: var(--accent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+.past-note { background: color-mix(in srgb, var(--j5) 22%, var(--surface)); border-radius: 12px; padding: 8px 12px; font-size: .9rem; font-weight: 600; margin-top: -4px; }
+input.t.flash { animation: flashIn .9s ease-out; border-color: var(--accent); }
 .emojis { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; }
 .emojis button { border: 2px solid transparent; background: var(--bg); border-radius: 12px; height: 42px; font-size: 1.3rem; }
 .emojis button[aria-pressed="true"] { border-color: var(--accent); }
@@ -679,7 +684,7 @@ button.flag-opt:hover { border-color: var(--accent); }
 
 <script>
 (() => {
-  const APP_VERSION = "1.4.0";
+  const APP_VERSION = "1.4.3";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
@@ -1234,9 +1239,12 @@ button.flag-opt:hover { border-color: var(--accent); }
     }
     return spentMemo[bid + "|" + ym] || 0;
   }
+  const rollStart = (b, ym = state.month) => b.rolloverFrom || (b.createdAt ? ymOf(b.createdAt) : ym);
+  // The first month a jar has any spends in (for "carry over from…").
+  const firstSpendMonth = (bid) => state.spends.filter((x) => x.bucketId === bid && x.date).map((x) => x.date.slice(0, 7)).sort()[0] || null;
   function carryOf(b, ym = state.month) {
     if (!rolls(b)) return 0;
-    const start = b.rolloverFrom || (b.createdAt ? ymOf(b.createdAt) : ym);
+    const start = rollStart(b, ym);
     if (ym < start) return 0;
     let carry = isSave(b) ? Number(b.start) || 0 : 0;
     for (let m = start; m < ym; m = shiftMonth(m, 1)) carry += limitOf(b, m) - spentIn(b.id, m);
@@ -2063,7 +2071,9 @@ button.flag-opt:hover { border-color: var(--accent); }
       const buckets = sortedBuckets();
       const v = evalAmount(sheet.amount || "");
       const day = Number((sheet.date || todayStr()).slice(8, 10));
+      const pastMonth = !sheet.editId && (sheet.date || todayStr()).slice(0, 7) < curMonth() ? (sheet.date || todayStr()).slice(0, 7) : null;
       html = `<div class="sheet-head"><h3>${sheet.editId ? "Edit spend" : "Add spend"}</h3><button class="x" data-close aria-label="Close">×</button></div>
+        ${pastMonth ? `<div class="past-note">📅 Adding to <b>${esc(monthName(pastMonth))}</b></div>` : ""}
         <form id="spendForm" style="display:grid;gap:14px" novalidate>
           <label class="f">Amount
             <div class="amount-wrap"><span>${esc(currency.symbol)}</span><input class="t amount num" id="spAmount" inputmode="decimal" autocomplete="off" placeholder="0" style="padding-left:${22 + currency.symbol.length * 20}px" value="${esc(sheet.amount || "")}" autofocus></div>
@@ -2089,7 +2099,7 @@ button.flag-opt:hover { border-color: var(--accent); }
             <button type="button" class="kind-opt" data-kind="spend" aria-pressed="${!save}"><span aria-hidden="true">🫙</span><b>Spending jar</b><small>Empties as you spend, fresh each month</small></button>
             <button type="button" class="kind-opt" data-kind="save" aria-pressed="${save}"><span aria-hidden="true">🏦</span><b>Saving jar</b><small>Fills up for bills every few months</small></button>
           </div>
-          ${sheet.id ? "" : `<div class="chips">${(save ? SAVE_PRESETS : PRESETS).filter(([n]) => !state.buckets.some((x) => x.name.toLowerCase() === n.toLowerCase())).map(([n, e]) => `<button type="button" class="chip" data-preset="${esc(n)}|${e}">${e} ${esc(n)}</button>`).join("")}</div>`}
+          ${sheet.id ? "" : `<div class="chips">${(save ? SAVE_PRESETS : PRESETS).filter(([n]) => !state.buckets.some((x) => x.name.toLowerCase() === n.toLowerCase())).map(([n, e]) => `<button type="button" class="chip" data-preset="${esc(n)}|${e}" aria-pressed="${(b.name || "").trim().toLowerCase() === n.toLowerCase()}">${e} ${esc(n)}</button>`).join("")}</div>`}
           ${save ? `<label class="f">What's it for? <input class="t" id="bkName" maxlength="40" placeholder="Car insurance" value="${esc(b.name)}" autofocus></label>
           <div class="two">
             <label class="f">Bill amount ${money$("bkGoal", b.goal, "600")}</label>
@@ -2105,7 +2115,10 @@ button.flag-opt:hover { border-color: var(--accent); }
             <label class="f">Name <input class="t" id="bkName" maxlength="40" placeholder="Groceries" value="${esc(b.name)}" autofocus></label>
             <label class="f">Monthly limit ${money$("bkLimit", b.limit, "600")}</label>
           </div>
-          <div class="set-row"><span>🔄 Roll over leftovers<small>Unspent money carries into next month (and overspending comes out of it). Great for Gifts or Fun money.</small></span><span class="switch"><input type="checkbox" id="bkRoll" aria-label="Roll over leftovers" ${b.rollover ? "checked" : ""}><i></i></span></div>`}
+          <div class="set-row"><span>🔄 Roll over leftovers<small>Unspent money carries into next month (and overspending comes out of it). Great for Gifts or Fun money.</small></span><span class="switch"><input type="checkbox" id="bkRoll" aria-label="Roll over leftovers" ${b.rollover ? "checked" : ""}><i></i></span></div>
+          ${b.rollover && b.firstMonth && b.firstMonth < curMonth() ? `<div class="f">Carry over from
+            <div class="chips">${[[b.firstMonth, `${monthName(b.firstMonth)} (first spends)`], [curMonth(), "This month on"]].map(([m, label]) => `<button type="button" class="chip" data-roll-from="${m}" aria-pressed="${(b.rollFrom || b.firstMonth) === m}">${esc(label)}</button>`).join("")}</div>
+          </div>` : ""}`}
           <div class="f">Icon
             <div class="emojis">${EMOJIS.map((e) => `<button type="button" data-emoji="${e}" aria-pressed="${b.emoji === e}" aria-label="${e}">${e}</button>`).join("")}</div>
           </div>
@@ -2190,6 +2203,10 @@ button.flag-opt:hover { border-color: var(--accent); }
         </form>`;
     } else if (sheet.kind === "whatsnew") {
       const items = [
+        ["🙌", "<b>You asked, we fixed:</b>"],
+        ["✅", "Picked options now light up with a ✓, so you know your choice stuck."],
+        ["🔄", "Roll over leftovers can now start from an earlier month, so spends you add for past months carry forward too."],
+        ["📅", "Adding a spend to a past month now says so at the top, so nothing lands in the wrong month."],
         ...(PT() ? [["👫", "<b>Share your budget with your partner.</b> Pair your phones once in Settings → Share with partner, and they sync whenever they're close by."],
           ["🔒", "No internet, no cloud: your budget travels phone to phone over Bluetooth and Wi-Fi."],
           ["⚠️", "If your phones disagree (you both edited the same spend, or logged the same thing twice), we keep everything safe and ask you which is right."],
@@ -2302,7 +2319,7 @@ button.flag-opt:hover { border-color: var(--accent); }
           <div class="pace num" style="text-align:left">of ${money(goal)}${due ? ` · due ${dueLabel(due)}` : ""} · putting aside ${money(limitOf(b))} a month${bal >= goal && goal > 0 ? ". It's ready! When you pay the bill, log it here as a spend." : ""}</div>`
           : `<div class="big num ${lf < 0 ? "over" : ""}" style="font-size:2.4rem;${lf < 0 ? "color:var(--danger)" : ""}">${lf < 0 ? money(-lf) + " over" : money(lf) + " left"}</div>
           <div class="bar"><i style="width:${lim > 0 ? Math.min(100, sp / lim * 100) : 0}%"></i></div>
-          <div class="pace num" style="text-align:left">${money(sp)} spent of ${money(lim)}${carry ? ` (${money(limitOf(b))} ${carry > 0 ? "+" : "−"} ${money(Math.abs(carry))} carried over 🔄)` : ""}</div>`}
+          <div class="pace num" style="text-align:left">${money(sp)} spent of ${money(lim)}${carry ? ` (${money(limitOf(b))} ${carry > 0 ? "+" : "−"} ${money(Math.abs(carry))} carried over since ${monthName(rollStart(b)).split(" ")[0]} 🔄)` : ""}</div>`}
         </div>
         <div class="detail-list">${list.length ? list.map((s) => spendRow(s, b)).join("") : `<div class="empty">Nothing spent from this jar in ${monthName(state.month).split(" ")[0]}.</div>`}</div>
         ${(() => { const reps = state.recurring.filter((r) => r.bucketId === b.id); return reps.length ? `<div class="set-row"><span>🔁 Repeats monthly<small>${reps.map((r) => `${esc(r.note || b.name)} · ${esc(money(Number(r.amount) || 0))} on the ${ordinal(Number(r.day) || 1)}`).join("<br>")}</small></span><button class="link-btn" data-recurring>Manage</button></div>` : ""; })()}
@@ -2336,7 +2353,7 @@ button.flag-opt:hover { border-color: var(--accent); }
       } else { sheet.draft.limit = c; sheet.draft.limitTouched = true; }
     }
     if (t.id === "spNote") sheet.note = t.value;
-    if (t.id === "spDate") sheet.date = t.value;
+    if (t.id === "spDate") { const was = (sheet.date || todayStr()).slice(0, 7) < curMonth(); sheet.date = t.value; if (was !== (t.value.slice(0, 7) < curMonth())) renderSheet(); }
     if (t.id === "bkName") sheet.draft.name = t.value;
     if (t.id === "ftIdea") sheet.idea = t.value;
     if (t.id === "ftName") sheet.name = t.value;
@@ -2364,7 +2381,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (t.id === "soundToggle") { prefs.sound = t.checked; savePrefs(); if (prefs.sound) chaChing(); }
     if (t.id === "remToggle") { if (t.checked) enableReminder(); else { prefs.reminder.on = false; savePrefs(); syncReminder(); } renderSheet(); }
     if (t.id === "spRepeat") { sheet.repeat = t.checked; renderSheet(); }
-    if (t.id === "bkRoll") sheet.draft.rollover = t.checked;
+    if (t.id === "bkRoll") { sheet.draft.rollover = t.checked; renderSheet(); }
     if (t.id === "festiveToggle") { prefs.festive = t.checked; if (t.checked) lsSet("lj-festive-skip", ""); savePrefs(); applySkin(); renderSheet(); }
     if (t.id === "midToggle") { if (t.checked) enableMid(); else { prefs.mid = false; savePrefs(); syncReminder(); } }
     if (t.id === "restoreFile" && t.files && t.files[0]) { const f = t.files[0]; t.value = ""; f.text().then(restoreFrom, () => toast("Couldn't read that file.")); }
@@ -2404,8 +2421,9 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (t.dataset.color) { sheet.draft.color = Number(t.dataset.color); return renderSheet(); }
     if (t.dataset.fill) { sheet.draft.fill = t.dataset.fill; return renderSheet(); }
     if (t.dataset.kind) { sheet.draft.kind = t.dataset.kind; sheet.error = ""; if (t.dataset.kind === "save" && !sheet.draft.emoji) sheet.draft.emoji = "🚗"; return renderSheet(); }
+    if (t.dataset.rollFrom) { sheet.draft.rollFrom = t.dataset.rollFrom; return renderSheet(); }
     if (t.dataset.every) { sheet.draft.every = t.dataset.every; return renderSheet(); }
-    if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; sheet.error = ""; return renderSheet(); }
+    if (t.dataset.preset) { const [n, em] = t.dataset.preset.split("|"); sheet.draft.name = n; sheet.draft.emoji = em; sheet.error = ""; renderSheet(); const nm = $("bkName"); if (nm) nm.classList.add("flash"); return; }
     if (t.dataset.move) { await moveBucket(sheet.id, Number(t.dataset.move)); return renderSheet(); }
     if (t.matches("[data-pair]")) return startPairing();
     if (t.dataset.pairConnect) { psync.phase = "waiting"; renderSheet(); try { await PT().connect({ id: t.dataset.pairConnect, name: "P|" + myName() }); } catch { psync.phase = "search"; psync.err = "Couldn't connect. Try again."; renderSheet(); } return; }
@@ -2511,7 +2529,7 @@ button.flag-opt:hover { border-color: var(--accent); }
       const id = sheet.id, old = id && state.buckets.find((x) => x.id === id);
       const data = { name, limit: lim, emoji: d.emoji || "🫙", color: d.color ?? 0, fill: d.fill || "surprise", kind: save ? "save" : "spend" };
       if (save) Object.assign(data, { goal, due: d.due, every: d.every || "3", start, rollover: false, rolloverFrom: isSave(old) && old.rolloverFrom ? old.rolloverFrom : curMonth() });
-      else Object.assign(data, { rollover: !!d.rollover, rolloverFrom: d.rollover ? (old && old.rollover && old.rolloverFrom) || curMonth() : null });
+      else Object.assign(data, { rollover: !!d.rollover, rolloverFrom: d.rollover ? d.rollFrom || d.firstMonth || curMonth() : null });
       closeSheet();
       if (id) await write(() => store.update("buckets", id, data), `Saved ${name}`);
       else await write(() => store.add("buckets", { ...data, order: state.buckets.reduce((m, b) => Math.max(m, b.order ?? 0), 0) + 1, createdAt: Date.now() }), `Created ${name}`);
@@ -2545,7 +2563,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     const used = new Set(state.buckets.map((x) => x.color));
     let free = 0; while (used.has(free) && free < COLORS - 1) free++;
     openSheet({ kind: "bucket", id: id || null, draft: b
-      ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0, fill: b.fill || "surprise", kind: b.kind || "spend", rollover: !!b.rollover, goal: b.goal ? String(b.goal) : "", due: b.due || "", every: b.every || "3", start: b.start ? String(b.start) : "", limitTouched: true }
+      ? { name: b.name, limit: String(b.limit), emoji: b.emoji, color: b.color ?? 0, fill: b.fill || "surprise", kind: b.kind || "spend", rollover: !!b.rollover, goal: b.goal ? String(b.goal) : "", due: b.due || "", every: b.every || "3", start: b.start ? String(b.start) : "", limitTouched: true, firstMonth: firstSpendMonth(b.id), rollFrom: b.rollover ? b.rolloverFrom || null : null }
       : { name: "", limit: "", emoji: "🛒", color: free, fill: "surprise", kind: "spend", rollover: false, goal: "", due: "", every: "3", start: "" } });
   }
 
