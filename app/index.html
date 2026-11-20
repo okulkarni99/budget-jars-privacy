@@ -688,7 +688,7 @@ button.flag-opt:hover { border-color: var(--accent); }
 
 <script>
 (() => {
-  const APP_VERSION = "1.4.3";
+  const APP_VERSION = "1.4.4";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
@@ -1708,9 +1708,12 @@ button.flag-opt:hover { border-color: var(--accent); }
     });
     return b;
   }
-  // Merge two budgets. `L` is this phone (the leader), `R` the partner's. `base` is what both had after
-  // their last sync. Returns the merged budget, with any new flags added to its "flags" collection.
-  function mergeBudgets(L, R, base, names, combine) {
+  // Merge two budgets. `L` is this phone (the leader), `R` the partner's. `baseL`/`baseR` are what each
+  // phone itself remembers from its last sync, so a phone that fell back to an older copy (reinstall,
+  // restore) is judged against its own older memory and its stale values never count as new changes.
+  // A spend missing on one phone with no delete record is never treated as deleted.
+  // Returns the merged budget, with any new flags added to its "flags" collection.
+  function mergeBudgets(L, R, baseL, baseR, names, combine) {
     const out = { _deleted: {} }, now = Date.now(), flags = { ...(L.flags || {}) };
     // Newest answer wins; on a tie, an answered flag beats an open one.
     Object.entries(R.flags || {}).forEach(([id, f]) => { const l = flags[id]; if (!l || (f._u || 0) > (l._u || 0) || ((f._u || 0) === (l._u || 0) && f.resolved && !l.resolved)) flags[id] = f; });
@@ -1741,14 +1744,22 @@ button.flag-opt:hover { border-color: var(--accent); }
     }
     SYNC_COLS.forEach((c) => {
       out[c] = {}; out._deleted[c] = {};
-      const Ld = L[c] || {}, Rd = R[c] || {}, Lt = (L._deleted || {})[c] || {}, Rt = (R._deleted || {})[c] || {}, B = (base && base[c]) || {};
+      const Ld = L[c] || {}, Rd = R[c] || {}, Lt = (L._deleted || {})[c] || {}, Rt = (R._deleted || {})[c] || {};
+      const BL = (baseL && baseL[c]) || {}, BR = (baseR && baseR[c]) || {};
       const ids = new Set([...Object.keys(Ld), ...Object.keys(Rd), ...Object.keys(Lt), ...Object.keys(Rt)]);
       ids.forEach((id) => {
-        const ld = Ld[id], rd = Rd[id], lt = Lt[id], rt = Rt[id], ls = sigOf(ld, lt), rs = sigOf(rd, rt), b = B[id] || "";
+        const ld = Ld[id], rd = Rd[id], lt = Lt[id], rt = Rt[id], ls = sigOf(ld, lt), rs = sigOf(rd, rt);
         const keep = (d) => { if (d) out[c][id] = d; };
         const tomb = () => { out._deleted[c][id] = Math.max(lt || 0, rt || 0, now); };
         if (ls === rs) return ld ? keep(ld) : tomb();
-        const lch = ls !== b, rch = rs !== b;
+        // A side changed it if it differs from that side's own last-sync memory. Not having it at all
+        // (no copy, no delete record) is "doesn't know about it", never a change.
+        const lch = ls !== "" && ls !== (BL[id] || ""), rch = rs !== "" && rs !== (BR[id] || "");
+        if (!lch && !rch) {
+          // Neither side changed it on purpose: keep whichever copy is newest.
+          if (ld && rd) return keep((ld._u || 0) >= (rd._u || 0) ? ld : rd);
+          return ld || rd ? keep(ld || rd) : tomb();
+        }
         if (!rch) return ld ? keep(ld) : tomb();
         if (!lch) return rd ? keep(rd) : tomb();
         // Both phones changed it since they last met.
@@ -1768,7 +1779,7 @@ button.flag-opt:hover { border-color: var(--accent); }
       });
     });
     // Spends that look logged twice: added on each phone since they last met, same jar, amount and day.
-    const B = (base && base.spends) || {}, fromL = {}, fromR = [];
+    const B = { ...((baseL && baseL.spends) || {}), ...((baseR && baseR.spends) || {}) }, fromL = {}, fromR = [];
     Object.entries(L.spends || {}).forEach(([id, d]) => { if (!B[id] && out.spends[id] && !(R.spends || {})[id]) fromL[`${d.bucketId}|${Number(d.amount)}|${d.date}`] = id; });
     Object.entries(R.spends || {}).forEach(([id, d]) => { if (!B[id] && out.spends[id] && !(L.spends || {})[id]) fromR.push([id, d]); });
     fromR.forEach(([rid, rd]) => {
@@ -1832,6 +1843,12 @@ button.flag-opt:hover { border-color: var(--accent); }
   }
   async function finishSync(result, base) {
     const pi = partnerInfo(); if (!pi) return;
+    // Keep this phone's copy from just before the sync (the last 3), so a bad sync can be undone.
+    try {
+      const snaps = JSON.parse(lsGet("lj-presync") || "[]");
+      snaps.unshift({ at: Date.now(), data: store.raw() });
+      lsSet("lj-presync", JSON.stringify(snaps.slice(0, 3)));
+    } catch {}
     store.replaceAll(result);
     lsSet("lj-sync-base", JSON.stringify(base));
     lsSet("lj-partner", JSON.stringify({ ...pi, lastSync: Date.now() }));
@@ -1894,7 +1911,7 @@ button.flag-opt:hover { border-color: var(--accent); }
           let result;
           if (psync.choice === "theirs") result = R;
           else if (psync.choice === "mine") result = L;
-          else result = mergeBudgets(L, R, null, names, true);
+          else result = mergeBudgets(L, R, null, null, names, true);
           result.flags = result.flags || {};
           await sendTo(e.id, { t: "merged", data: result, choice: psync.choice });
           lsSet("lj-partner", JSON.stringify({ pairId: psync.peer.pairId, tag: shortHash(psync.peer.pairId), name: psync.peer.name, dev: psync.peer.dev, since: Date.now(), lastSync: 0 }));
@@ -1941,7 +1958,7 @@ button.flag-opt:hover { border-color: var(--accent); }
       }
       if (e.type === "connected") {
         psync.phase = "syncing"; if (sheet && sheet.kind === "partner") renderSheet();
-        if (deviceId() > pi.dev) sendTo(e.id, { t: "state", pairId: pi.pairId, data: store.raw() });
+        if (deviceId() > pi.dev) { let myBase = {}; try { myBase = JSON.parse(lsGet("lj-sync-base") || "{}"); } catch {} sendTo(e.id, { t: "state", pairId: pi.pairId, data: store.raw(), base: myBase }); }
         return;
       }
       if (e.type === "disconnected") { psync.peer = null; psync.phase = "search"; return; }
@@ -1950,7 +1967,7 @@ button.flag-opt:hover { border-color: var(--accent); }
         if (m.pairId && m.pairId !== pi.pairId) return;
         if (m.t === "state" && deviceId() < pi.dev) {
           let base = {}; try { base = JSON.parse(lsGet("lj-sync-base") || "{}"); } catch {}
-          const result = mergeBudgets(store.raw(), m.data, base, { a: myName(), b: pi.name }, false);
+          const result = mergeBudgets(store.raw(), m.data, base, m.base || {}, { a: myName(), b: pi.name }, false);
           await sendTo(e.id, { t: "merged", pairId: pi.pairId, data: result });
           await finishSync(result, baseOf(result));
           return;
@@ -1984,6 +2001,23 @@ button.flag-opt:hover { border-color: var(--accent); }
     }
     await done();
     render(); if (sheet) renderSheet();
+  }
+  // Undo a sync: put back anything this phone had right before it that is now missing or different.
+  // It never deletes, and the restored items count as new changes, so the next sync spreads them.
+  async function undoLastSync() {
+    let snap = null; try { snap = JSON.parse(lsGet("lj-presync") || "[]")[0]; } catch {}
+    if (!snap) return toast("There's no earlier copy to bring back.");
+    const when = new Date(snap.at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const ok = await ask({ title: "Undo the last sync?", text: `This brings back everything this phone had before syncing on <b>${esc(when)}</b>. Nothing gets deleted, and your partner gets these back at the next sync.`, yes: "Bring them back", no: "Cancel", danger: false });
+    if (!ok) return;
+    const now = store.raw(); let n = 0;
+    await write(async () => {
+      for (const c of SYNC_COLS) for (const [id, d] of Object.entries(snap.data[c] || {})) {
+        if (!now[c] || !now[c][id] || !sameDoc(now[c][id], d)) { await store.put(c, id, strip(d)); n++; }
+      }
+    });
+    render(); if (sheet) renderSheet();
+    toast(n ? `Brought back ${n} item${n === 1 ? "" : "s"} ↩️ They'll sync to your partner next time.` : "Nothing was missing. You're all set ✅", 4000);
   }
   async function unpair() {
     const pi = partnerInfo(); if (!pi) return;
@@ -2207,6 +2241,7 @@ button.flag-opt:hover { border-color: var(--accent); }
         </form>`;
     } else if (sheet.kind === "whatsnew") {
       const items = [
+        ...(PT() ? [["🛟", "<b>Safer partner sync:</b> a phone with an older copy can no longer wipe out newer spends. And if a sync ever goes wrong, <b>Undo the last sync</b> brings everything back (Settings → Share with partner)."]] : []),
         ["🙌", "<b>You asked, we fixed:</b>"],
         ["✅", "Picked options now light up with a ✓, so you know your choice stuck."],
         ["🔄", "Roll over leftovers can now start from an earlier month, so spends you add for past months carry forward too."],
@@ -2302,6 +2337,7 @@ button.flag-opt:hover { border-color: var(--accent); }
         ${flags.length ? `<div class="flags"><h4>Needs your OK (${flags.length})</h4><p class="row-meta" style="margin:0">Your phones didn't agree on these. Nothing is lost: we kept a version of each until you decide.</p>${flags.map(flagCard).join("")}</div>`
           : `<div class="privacy-note"><span aria-hidden="true">✅</span><span>Everything matches. Your budget travels phone to phone, never through the internet.</span></div>`}
         <div class="actions"><button class="btn primary" data-sync-now>🔄 Sync now</button></div>
+        ${lsGet("lj-presync") ? `<button class="link-btn" data-undo-sync style="justify-self:start">↩️ Undo the last sync</button>` : ""}
         <button class="link-btn" data-unpair style="color:var(--danger);justify-self:start">Stop sharing</button>`;
     } else if (sheet.kind === "remindAsk") {
       html = `<div class="sheet-head"><h3>🌙 Want a gentle nudge?</h3><button class="x" data-close aria-label="Close">×</button></div>
@@ -2443,6 +2479,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (t.matches("[data-partner]")) { startAutoSync(); return openSheet({ kind: "partner" }); }
     if (t.matches("[data-sync-now]")) { psync.announce = true; psync.cooldownUntil = 0; startAutoSync(true); return renderSheet(); }
     if (t.matches("[data-unpair]")) return unpair();
+    if (t.matches("[data-undo-sync]")) return undoLastSync();
     if (t.dataset.flag) return resolveFlag(t.dataset.flag, t.dataset.ans);
     if (t.dataset.acc) { sheet.open = sheet.open === t.dataset.acc ? null : t.dataset.acc; return renderSheet(); }
     if (t.dataset.display) { prefs.display = t.dataset.display; savePrefs(); render(); return renderSheet(); }
