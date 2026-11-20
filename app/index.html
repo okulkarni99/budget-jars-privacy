@@ -617,6 +617,30 @@ input.t.flash { animation: flashIn .9s ease-out; border-color: var(--accent); }
 .flag-opt, .flag-one { display: grid; gap: 2px; text-align: left; border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 10px; font-size: .9rem; }
 button.flag-opt:hover { border-color: var(--accent); }
 .flag-opt small { color: var(--muted); font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+/* Statement import */
+.imp-steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.imp-steps li { display: flex; gap: 12px; align-items: flex-start; background: var(--bg); border-radius: 14px; padding: 10px 12px; font-size: .92rem; }
+.imp-steps li::before { counter-increment: s; content: counter(s); flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; font-size: .8rem; }
+.bank-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bank-chips span { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: .8rem; font-weight: 600; color: var(--muted); }
+.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.tab { flex: none; border: 2px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: .85rem; font-weight: 700; }
+.tab.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.imp-list { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.imp-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.imp-row:first-child { border-top: 0; }
+.imp-row input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.imp-row .row-main { flex: 1; min-width: 0; }
+.imp-row .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.imp-row .m { color: var(--muted); font-size: .78rem; }
+.imp-row .amt { font-weight: 700; }
+.imp-row.off { opacity: .5; }
+.jar-pick { display: inline-flex; align-items: center; gap: 4px; border: 2px solid var(--c, var(--line)); background: color-mix(in srgb, var(--c, var(--line)) 14%, var(--surface)); color: var(--ink); border-radius: 999px; padding: 2px 9px; font-size: .76rem; font-weight: 700; margin-top: 4px; }
+.jar-pick.need { --c: var(--j5); }
+.tag { font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 2px 7px; margin-left: 6px; vertical-align: 1px; }
+.tag.dup { background: var(--bg); color: var(--muted); }
+.sum-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .88rem; color: var(--muted); }
+.sum-bar b { color: var(--ink); }
 .rate-faces { font-size: 2.6rem; text-align: center; letter-spacing: .1em; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -667,6 +691,7 @@ button.flag-opt:hover { border-color: var(--accent); }
 <div id="tourRoot"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+<input type="file" id="importFile" accept=".csv,.pdf,.txt,text/csv,application/pdf" hidden>
 <div id="intro" aria-hidden="true">
   <div class="intro-stage">
     <svg class="intro-jar" viewBox="0 0 200 220">
@@ -688,7 +713,7 @@ button.flag-opt:hover { border-color: var(--accent); }
 
 <script>
 (() => {
-  const APP_VERSION = "1.4.4";
+  const APP_VERSION = "1.5.0";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
@@ -2220,6 +2245,9 @@ button.flag-opt:hover { border-color: var(--accent); }
           ${pastMonths().length ? `<button class="btn" data-wrap="${pastMonths().slice(-1)[0]}" style="text-align:left">🎁 ${monthName(pastMonths().slice(-1)[0]).split(" ")[0]} Jar Wrap</button>` : ""}
           ${nRep ? `<button class="btn" data-recurring style="text-align:left">🔁 Monthly repeats <span class="row-meta">· ${nRep}</span></button>` : ""}`)}
         ${state.readOnly ? "" : section("data", "💾", "Your data", lastBackup ? `Backed up ${new Date(Number(lastBackup)).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "", `
+          <button class="btn primary" data-import style="text-align:left">📥 Import a bank statement</button>
+          <div class="row-meta">Add a month of spends in one go from your bank's CSV or PDF statement. It's read on your phone and never uploaded.</div>
+          ${Object.keys(importRules()).length ? `<button class="btn" data-rules style="text-align:left">🧠 Smart sorting <span class="row-meta">· ${Object.keys(importRules()).length} shop${Object.keys(importRules()).length === 1 ? "" : "s"}</span></button>` : ""}
           <div class="btn-row"><button class="btn" data-backup>💾 Back up</button><button class="btn" data-restore>📂 Restore</button><button class="btn" data-csv>📊 Export CSV</button></div>
           <div class="row-meta">${lastBackup ? `Last backup: ${new Date(Number(lastBackup)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. ` : ""}A backup is one small file with all your jars and spends. Keep it somewhere safe, like your Drive or email${JT() ? ". Android's own backup also brings your jars along to a new phone" : IN_CLAUDE ? "" : ", and use Restore on a new phone"}.</div>`)}
         ${section("hi", "💌", "Say hi", "", `
@@ -2241,6 +2269,8 @@ button.flag-opt:hover { border-color: var(--accent); }
         </form>`;
     } else if (sheet.kind === "whatsnew") {
       const items = [
+        ["📥", "<b>Import your bank statement:</b> add a whole month of spends from a PDF or CSV in one go. We sort them into jars, skip anything you already logged, and remember your shops. Settings → Your data."],
+        ["🔒", "Your statement is read right on your phone and never uploaded."],
         ...(PT() ? [["🛟", "<b>Safer partner sync:</b> a phone with an older copy can no longer wipe out newer spends. And if a sync ever goes wrong, <b>Undo the last sync</b> brings everything back (Settings → Share with partner)."]] : []),
         ["🙌", "<b>You asked, we fixed:</b>"],
         ["✅", "Picked options now light up with a ✓, so you know your choice stuck."],
@@ -2307,6 +2337,49 @@ button.flag-opt:hover { border-color: var(--accent); }
         <div class="rate-faces" aria-hidden="true">🫙💛</div>
         <p style="margin:0;text-align:center">You've been filling your jars for a while now. How's it going?</p>
         <div class="actions"><button class="btn" data-rate-no>Not really</button><button class="btn primary" data-rate-yes>Love it! 😍</button></div>`;
+    } else if (sheet.kind === "import") {
+      const head = (t) => `<div class="sheet-head"><h3>${t}</h3><button class="x" data-close aria-label="Close">×</button></div>`;
+      if (sheet.step === "how") html = `${head("📥 Import a statement")}
+        <ol class="imp-steps">
+          <li><span>Open your bank or card's app or website and find <b>Statements</b>, or <b>Download transactions</b> / <b>Export</b>.</span></li>
+          <li><span>Save the month you want as a <b>PDF</b> statement or a <b>CSV</b> file.</span></li>
+          <li><span>Come back here and choose the file. We'll sort each spend into a jar for you to check.</span></li>
+        </ol>
+        <div class="bank-chips">${["Amex", "Chase", "Capital One", "Bank of America", "Citi", "Discover", "HDFC", "ICICI", "SBI", "+ most others"].map((b) => `<span>${b}</span>`).join("")}</div>
+        <div class="privacy-note"><span aria-hidden="true">🔒</span><span><b>Stays on your phone.</b> The file is read right here and never uploaded anywhere.</span></div>
+        ${sheet.error ? `<div class="err">${esc(sheet.error)}</div>` : ""}
+        <div class="actions"><button class="btn primary" data-pick-statement>📂 Choose file</button></div>`;
+      else if (sheet.step === "reading") html = `${head("📥 Import a statement")}<div class="pair-hero"><div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>🧾</b></div><b class="pair-title">Reading your statement…</b><div class="row-meta">This happens on your phone.</div></div>`;
+      else if (sheet.picking !== null && sheet.picking !== undefined) {
+        const t = sheet.tx.find((x) => x.i === sheet.picking);
+        html = `${head(`Which jar for ${esc(t.name)}?`)}
+          <div class="row-meta">${esc(shortDate(t.date))} · ${esc(money(t.amount))} · <span style="opacity:.8">${esc(t.desc)}</span></div>
+          <div class="chips">${sortedBuckets().filter((b) => !isSave(b)).map((b) => `<button class="chip" style="--c:${bucketColor(b)}" data-imp-jar="${esc(b.id)}" aria-pressed="${t.bucketId === b.id}">${esc(b.emoji || "🫙")} ${esc(b.name)}</button>`).join("")}</div>
+          <div class="set-row"><span>Always put ${esc(t.name)} here<small>Next time, it's sorted for you</small></span><span class="switch"><input type="checkbox" id="impRemember" aria-label="Remember this shop" ${t.remember !== false ? "checked" : ""}><i></i></span></div>
+          <div class="actions"><button class="btn primary" data-imp-done>Done</button></div>`;
+      } else {
+        const tx = sheet.tx, m = sheet.meta;
+        const need = tx.filter((t) => t.on && !t.bucketId).length, dups = tx.filter((t) => t.dup).length;
+        const shown = tx.filter((t) => sheet.filter === "pick" ? !t.bucketId : sheet.filter === "dup" ? t.dup : true);
+        const todo = tx.filter((t) => t.on && t.bucketId), sum = todo.reduce((a, t) => a + t.amount, 0);
+        const match = m.stmtTotal && Math.abs(m.stmtTotal - m.total) < 0.01;
+        html = `${head("Check your spends")}
+          <div class="found"><span aria-hidden="true">🧾</span><div class="row-main"><b>We found ${tx.length} spend${tx.length === 1 ? "" : "s"} 🎉</b>
+            <div class="row-meta">${esc(shortDate(m.from))} – ${esc(shortDate(m.to))} · ${esc(money(m.total))}${match ? " · matches your statement ✓" : ""}${m.skipped ? ` · ${m.skipped} payment${m.skipped === 1 ? "" : "s"}/refund${m.skipped === 1 ? "" : "s"} left out` : ""}</div></div></div>
+          <div class="tabs">${[["all", `All ${tx.length}`], ["pick", `Pick a jar ${tx.filter((t) => !t.bucketId).length}`], ["dup", `Already logged ${dups}`]].map(([f, l]) => `<button class="tab ${sheet.filter === f ? "on" : ""}" data-imp-filter="${f}">${l}</button>`).join("")}</div>
+          <div class="imp-list">${shown.length ? shown.map((t) => { const b = state.buckets.find((x) => x.id === t.bucketId); return `<div class="imp-row ${t.on ? "" : "off"} ${t.dup ? "dup" : ""}">
+            <input type="checkbox" data-imp-on="${t.i}" ${t.on ? "checked" : ""} aria-label="Import ${esc(t.name)}">
+            <div class="row-main"><div class="t">${esc(t.name)}${t.dup ? '<span class="tag dup">Already logged</span>' : ""}</div><div class="m">${esc(shortDate(t.date))}</div>
+              <button class="jar-pick ${b ? "" : "need"}" data-imp-pick="${t.i}" style="${b ? `--c:${bucketColor(b)}` : ""}">${b ? `${esc(b.emoji || "🫙")} ${esc(b.name)}` : "Pick a jar"} ▾</button></div>
+            <div class="amt num">${esc(money(t.amount))}</div></div>`; }).join("") : `<div class="empty">Nothing here.</div>`}</div>
+          <div class="sum-bar"><span><b>${todo.length}</b> to import · <b>${esc(money(sum))}</b></span>${need ? `<span>${need} need a jar</span>` : ""}</div>
+          <div class="actions"><button class="btn primary" data-imp-go ${todo.length ? "" : "disabled"}>Import ${todo.length} spend${todo.length === 1 ? "" : "s"}</button></div>`;
+      }
+    } else if (sheet.kind === "rules") {
+      const rules = Object.entries(importRules());
+      html = `<div class="sheet-head"><h3>🧠 Smart sorting</h3><button class="x" data-close aria-label="Close">×</button></div>
+        <p class="row-meta" style="margin:0">Little Jars remembers which jar your shops go in when you import a statement. Remove any you don't want.</p>
+        <div class="detail-list">${rules.length ? rules.map(([k, bid]) => { const b = state.buckets.find((x) => x.id === bid); return `<div class="row" style="--c:${bucketColor(b)}"><div class="row-main"><div class="row-title" style="text-transform:capitalize">${esc(k)}</div><div class="row-meta">→ ${b ? `${esc(b.emoji || "🫙")} ${esc(b.name)}` : "a deleted jar"}</div></div><button class="row-del" data-rule-del="${esc(k)}" aria-label="Forget ${esc(k)}">×</button></div>`; }).join("") : `<div class="empty">Nothing learned yet.</div>`}</div>`;
     } else if (sheet.kind === "pair") {
       const ph = psync.phase, found = Object.entries(psync.found), pn = psync.peer && psync.peer.name ? esc(psync.peer.name) : "your partner";
       const head = `<div class="sheet-head"><h3>👫 ${ph === "search" ? "Pair with your partner" : ph === "choose" || ph === "waitchoice" || ph === "syncing" ? `Paired with ${pn}` : `Pair with ${pn}`}</h3><button class="x" data-close aria-label="Close">×</button></div>`;
@@ -2421,10 +2494,13 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (t.id === "curSel") { setCurrencyCode(t.value); prefs.currency = currency.code; savePrefs(); render(); renderSheet(); }
     if (t.id === "soundToggle") { prefs.sound = t.checked; savePrefs(); if (prefs.sound) chaChing(); }
     if (t.id === "remToggle") { if (t.checked) enableReminder(); else { prefs.reminder.on = false; savePrefs(); syncReminder(); } renderSheet(); }
+    if (t.dataset && t.dataset.impOn !== undefined && sheet && sheet.kind === "import") { const x = sheet.tx.find((v) => v.i === Number(t.dataset.impOn)); x.on = t.checked; renderSheet(); }
+    if (t.id === "impRemember" && sheet && sheet.kind === "import") { const x = sheet.tx.find((v) => v.i === sheet.picking); x.remember = t.checked; }
     if (t.id === "spRepeat") { sheet.repeat = t.checked; renderSheet(); }
     if (t.id === "bkRoll") { sheet.draft.rollover = t.checked; renderSheet(); }
     if (t.id === "festiveToggle") { prefs.festive = t.checked; if (t.checked) lsSet("lj-festive-skip", ""); savePrefs(); applySkin(); renderSheet(); }
     if (t.id === "midToggle") { if (t.checked) enableMid(); else { prefs.mid = false; savePrefs(); syncReminder(); } }
+    if (t.id === "importFile" && t.files && t.files[0]) { const f = t.files[0]; t.value = ""; f.arrayBuffer().then((b) => readStatement(new Uint8Array(b), f.name), () => toast("Couldn't read that file.")); }
     if (t.id === "restoreFile" && t.files && t.files[0]) { const f = t.files[0]; t.value = ""; f.text().then(restoreFrom, () => toast("Couldn't read that file.")); }
     if (t.id === "remTime" && t.value) { prefs.reminder.time = t.value; savePrefs(); syncReminder(); toast(`We'll nudge you at ${fmtTime(t.value)}`); }
   });
@@ -2501,6 +2577,21 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (t.matches("[data-backup]")) return backup();
     if (t.matches("[data-restore]")) return pickRestore();
     if (t.matches("[data-csv]")) return exportCsv();
+    if (t.matches("[data-import]")) return startImport();
+    if (t.matches("[data-pick-statement]")) return pickStatement();
+    if (t.matches("[data-rules]")) return openSheet({ kind: "rules" });
+    if (t.dataset.ruleDel) { const r = importRules(); delete r[t.dataset.ruleDel]; lsSet("lj-import-rules", JSON.stringify(r)); return renderSheet(); }
+    if (t.dataset.impFilter) { sheet.filter = t.dataset.impFilter; return renderSheet(); }
+    if (t.dataset.impPick) { sheet.picking = Number(t.dataset.impPick); return renderSheet(true); }
+    if (t.dataset.impJar) {
+      const cur = sheet.tx.find((x) => x.i === sheet.picking); cur.bucketId = t.dataset.impJar; cur.on = cur.on || !cur.dup;
+      if (cur.remember === undefined) cur.remember = true;
+      // The same shop elsewhere in this statement goes in the same jar.
+      const k = merchantKey(cur.name); sheet.tx.forEach((x) => { if (x !== cur && !x.bucketId && merchantKey(x.name) === k) x.bucketId = cur.bucketId; });
+      return renderSheet();
+    }
+    if (t.matches("[data-imp-done]")) { sheet.picking = null; return renderSheet(true); }
+    if (t.matches("[data-imp-go]")) return finishImport();
     if (t.matches("[data-rate-store]")) { try { await JT().openStore(); } catch { toast("Couldn't open Google Play."); } return; }
     if (t.matches("[data-rate-yes]")) { lsSet("lj-rate", "done"); closeSheet(); try { await JT().requestReview(); } catch { try { await JT().openStore(); } catch {} } return; }
     if (t.matches("[data-rate-no]")) { lsSet("lj-rate", "done"); return openSheet({ kind: "feature", feedback: true }); }
@@ -2813,6 +2904,239 @@ button.flag-opt:hover { border-color: var(--accent); }
     state.month = curMonth(); render();
     toast(`Restored ${buckets.length} jars and ${spends.length} spends 🎉`);
   }
+  /* ---------- statement import: a month of spends from a bank CSV or PDF, read on this phone ---------- */
+  // Nothing is uploaded. CSV files from most banks work; PDF statements are read with a bundled copy of
+  // pdf.js (Mozilla, Apache-2.0) by finding lines that start with a date and end with an amount.
+  const PDFJS_VER = "4.10.38";
+  let pdfjsLib = null;
+  async function loadPdfjs() {
+    if (pdfjsLib) return pdfjsLib;
+    const base = IN_CLAUDE ? `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/` : new URL("vendor/pdfjs/", location.href).href;
+    const ext = IN_CLAUDE ? ".mjs" : ".js";
+    pdfjsLib = await import(base + "pdf.min" + ext);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = base + "pdf.worker.min" + ext;
+    return pdfjsLib;
+  }
+  const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  // Dates in the shapes banks use: 10/02/26, 10/02/2026, 10/02, 2026-10-02, 02 Oct 2026, Oct 2, 2026, 02-Oct-26.
+  function parseTxDate(raw, ctx = {}) {
+    const s = String(raw || "").trim().replace(/\*$/, "");
+    let y, m, d, mt;
+    const fullYear = (yy) => (yy.length === 2 ? 2000 + Number(yy) : Number(yy));
+    if ((mt = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+    else if ((mt = s.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?$/))) {
+      let a = +mt[1], b = +mt[2];
+      const dmy = ctx.dmy === true || (ctx.dmy !== false && a > 12);
+      if (dmy) [d, m] = [a, b]; else [m, d] = [a, b];
+      y = mt[3] ? fullYear(mt[3]) : null;
+    } else if ((mt = s.match(/^(\d{1,2})[\s-]([A-Za-z]{3})[A-Za-z]*[\s,-]+(\d{2,4})$/))) { d = +mt[1]; m = MONTHS.indexOf(mt[2].toLowerCase()) + 1; y = fullYear(mt[3]); }
+    else if ((mt = s.match(/^([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{1,2}),?\s+(\d{2,4})$/))) { m = MONTHS.indexOf(mt[1].toLowerCase()) + 1; d = +mt[2]; y = fullYear(mt[3]); }
+    else return null;
+    if (!y) {
+      // No year (e.g. 10/02): use the statement's closing date, or today, and step back a year if needed.
+      const ref = ctx.ref || todayStr();
+      y = +ref.slice(0, 4); if (m > +ref.slice(5, 7)) y--;
+    }
+    if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31 && y > 1990 && y < 2100)) return null;
+    return `${y}-${pad(m)}-${pad(d)}`;
+  }
+  // "$1,234.56", "-$12.00", "(12.00)", "12.00 CR", "₹1,200" → number (credits negative).
+  function parseTxAmount(raw) {
+    let s = String(raw || "").trim();
+    if (!s) return NaN;
+    let neg = /^\(.*\)$/.test(s) || /^-/.test(s) || /-$/.test(s) || /\bcr\.?$/i.test(s);
+    s = s.replace(/\b(cr|dr)\.?$/i, "").replace(/[^0-9.,]/g, "");
+    if (/,\d{2}$/.test(s) && !/\.\d{2}$/.test(s)) s = s.replace(/\./g, "").replace(",", ".");
+    const v = parseFloat(s.replace(/,/g, ""));
+    return isFinite(v) ? (neg ? -v : v) : NaN;
+  }
+  const isAmountCell = (s) => /^\(?-?\s?[$₹€£]?\s?-?[\d,]+\.\d{2}\)?(\s?(cr|dr))?$/i.test(String(s).trim());
+  const isDateCell = (s) => /^(\d{1,2}[\/.-]\d{1,2}([\/.-]\d{2,4})?|\d{4}-\d{2}-\d{2}|\d{1,2}[\s-][A-Za-z]{3}[A-Za-z]*[\s,-]+\d{2,4}|[A-Za-z]{3}\.?\s+\d{1,2},?\s+\d{2,4})\*?$/.test(String(s).trim());
+  // Payments to the card, refunds and interest lines aren't spending.
+  const NOT_SPENDING = /autopay|payment received|payment - thank|thank you|online payment|card payment|interest charge|balance transfer|returned payment/i;
+  function parseCsvRows(text) {
+    const rows = []; let row = [], cell = "", q = false;
+    const t = String(text).replace(/^﻿/, "");
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (q) { if (ch === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ",") { row.push(cell); cell = ""; }
+      else if (ch === "\n" || ch === "\r") { if (ch === "\r" && t[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += ch;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter((r) => r.some((c) => c.trim()));
+  }
+  function csvToTx(text) {
+    const rows = parseCsvRows(text);
+    let h = -1, col = {};
+    for (let i = 0; i < Math.min(rows.length, 15); i++) {
+      const r = rows[i].map((c) => c.trim().toLowerCase());
+      const find = (re) => r.findIndex((c) => re.test(c));
+      const date = find(/^(transaction |trans\.? |posting |post |value )?date|^date/), desc = find(/description|merchant|payee|details|narration|particulars|name|memo/);
+      const amt = find(/^amount|amount$|^amt/), debit = find(/debit|withdrawal|charges?$|spent/), credit = find(/credit|deposit/);
+      if (date >= 0 && desc >= 0 && (amt >= 0 || debit >= 0)) { h = i; col = { date, desc, amt, debit, credit }; break; }
+    }
+    if (h < 0) return { tx: [], error: "We couldn't find the date, description and amount columns in this file." };
+    const body = rows.slice(h + 1);
+    // Some banks write dates day-first (most of India); decide from the file itself.
+    const firsts = body.map((r) => (String(r[col.date] || "").match(/^(\d{1,2})[\/.-](\d{1,2})/) || []).slice(1).map(Number));
+    const dmy = firsts.some((p) => p[0] > 12) ? true : firsts.some((p) => p[1] > 12) ? false : currency.code === "INR" ? true : false;
+    // With a single amount column, banks disagree on the sign of a purchase; the most common sign wins.
+    let signFlip = false;
+    if (col.amt >= 0 && col.debit < 0) {
+      const vals = body.map((r) => parseTxAmount(r[col.amt])).filter((v) => isFinite(v) && v !== 0);
+      signFlip = vals.filter((v) => v < 0).length > vals.filter((v) => v > 0).length;
+    }
+    const tx = []; let skipped = 0;
+    body.forEach((r) => {
+      const date = parseTxDate(r[col.date], { dmy }), desc = String(r[col.desc] || "").trim();
+      let amount = col.debit >= 0 ? parseTxAmount(r[col.debit]) : parseTxAmount(r[col.amt]);
+      if (col.debit >= 0 && !(Math.abs(amount) > 0)) amount = col.credit >= 0 && parseTxAmount(r[col.credit]) > 0 ? -1 : NaN;
+      else if (col.debit >= 0) amount = Math.abs(amount);
+      if (signFlip) amount = -amount;
+      if (!date || !desc || !isFinite(amount)) return;
+      if (amount <= 0 || NOT_SPENDING.test(desc)) { skipped++; return; }
+      tx.push({ date, desc, amount: Math.round(amount * 100) / 100 });
+    });
+    return { tx, skipped };
+  }
+  // PDF: rebuild each printed line from pdf.js text pieces, split into cells at wide gaps.
+  async function pdfToTx(bytes) {
+    const lib = await loadPdfjs();
+    const doc = await lib.getDocument({ data: bytes, isEvalSupported: false }).promise;
+    const lines = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const items = (await (await doc.getPage(p)).getTextContent()).items.filter((it) => it.str && it.str.trim());
+      const rows = [];
+      items.forEach((it) => {
+        const x = it.transform[4], y = it.transform[5], w = it.width || 0;
+        let row = rows.find((r) => Math.abs(r.y - y) < 2.5);
+        if (!row) { row = { y, parts: [] }; rows.push(row); }
+        row.parts.push({ x, end: x + w, s: it.str });
+      });
+      rows.sort((a, b) => b.y - a.y).forEach((r) => {
+        r.parts.sort((a, b) => a.x - b.x);
+        const cells = []; let last = null;
+        r.parts.forEach((pt) => {
+          if (last && pt.x - last.end < 9) { last.s += (pt.x - last.end > 1.5 ? " " : "") + pt.s; last.end = pt.end; }
+          else { last = { s: pt.s, end: pt.end }; cells.push(last); }
+        });
+        lines.push(cells.map((c) => c.s.trim()).filter(Boolean));
+      });
+    }
+    const all = lines.map((c) => c.join(" ")).join("\n");
+    // The closing date gives the year for MM/DD dates; "Total New Charges" lets us double-check the sum.
+    const close = all.match(/closing date[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+    const ref = close ? parseTxDate(close[1]) : null;
+    const totalLine = lines.find((c) => /total\s+new\s+charges|total\s+purchases/i.test(c.join(" ")) && isAmountCell(c[c.length - 1]));
+    const tx = []; let skipped = 0;
+    lines.forEach((c) => {
+      if (c.length < 3 || !isDateCell(c[0]) || !isAmountCell(c[c.length - 1])) return;
+      const date = parseTxDate(c[0], { ref: ref || undefined, dmy: currency.code === "INR" ? undefined : false });
+      const desc = c.slice(1, -1).find((x) => !isDateCell(x)) || "";
+      const amount = parseTxAmount(c[c.length - 1]);
+      if (!date || !desc || !isFinite(amount)) return;
+      if (amount <= 0 || NOT_SPENDING.test(desc)) { skipped++; return; }
+      tx.push({ date, desc, amount: Math.round(amount * 100) / 100 });
+    });
+    return { tx, skipped, stmtTotal: totalLine ? Math.abs(parseTxAmount(totalLine[totalLine.length - 1])) : null };
+  }
+  // "GglPay H-E-B #804 000000094334" → "H-E-B", "AMAZON DIGIT*5X8D377A1" → "Amazon Digit".
+  function cleanMerchant(desc) {
+    let s = String(desc).replace(/^(gglpay|aplpay|applepay|googlepay|sq\s?\*|tst\*|py\s?\*|sp\s+|pp\*|paypal\s?\*)\s*/i, "");
+    // UPI lines ("UPI-SWIGGY-swiggy@icici-…"): keep just the payee name.
+    const upi = s.match(/^upi[-\/ ]+([^-\/@]+)/i); if (upi) s = upi[1];
+    s = s.replace(/\S+@\S+/g, "").replace(/\*(?=[A-Z0-9]*\d)[A-Z0-9]{4,}\b/gi, "").replace(/\s*\*\s*/g, " ").replace(/#\s?\d+/g, "").replace(/\b\d{4,}\b/g, "").replace(/\s{2,}/g, " ").trim();
+    s = s.split(" ").map((w) => (/^[A-Z][A-Z.&'-]{3,}$/.test(w) && !/-/.test(w) ? w[0] + w.slice(1).toLowerCase() : w)).join(" ");
+    return s.slice(0, 60) || String(desc).slice(0, 60);
+  }
+  const merchantKey = (name) => { const w = String(name).toLowerCase().replace(/[^a-z0-9 ]/g, "").split(/\s+/).filter(Boolean); return (w[0] && w[0].length >= 4 ? w[0] : w.slice(0, 2).join(" ")) || ""; };
+  const importRules = () => { try { return JSON.parse(lsGet("lj-import-rules") || "{}") || {}; } catch { return {}; } };
+  // Starter guesses: a merchant pattern and the kind of jar name it belongs in. Your own choices win.
+  const MERCHANT_HINTS = [
+    [/coffee|cafe/i, /starbucks|dunkin|peet'?s|dutch bros|tim hortons|blue bottle|coffee/i],
+    [/subscri|stream|entertain|fun|bills/i, /netflix|disney|hbo|max stream|youtube|spotify|hulu|amazon prime|apple\.com|paramount|peacock/i],
+    [/eat|dining|restaurant|takeout|food/i, /doordash|uber ?eats|grubhub|chipotle|mcdonald|taco bell|wendy|burger|pizza|domino|subway|chick-?fil|panera|sweetgreen|restaurant|grill|kitchen|swiggy|zomato|biryani|deli\b/i],
+    [/grocer|market|food|essentials/i, /h-?e-?b\b|walmart|kroger|costco|trader joe|whole foods|safeway|aldi|publix|sprouts|wegmans|patel|desi|india ?bazaar|apna bazar|big ?basket|dmart|reliance fresh|grocery|supermarket|^(?!.*amazon).*\bmarket\b/i],
+    [/gas|fuel|car|auto|transport|commute|travel/i, /shell|exxon|chevron|\bbp\b|valero|buc-?ee|quiktrip|\bqt\b|circle k|sunoco|ez ?tag|hctra|toll|lyft|uber(?! ?eats)|parking|petrol|\bhp\b|indian oil/i],
+    [/shop/i, /amazon|amzn|target|etsy|best buy|ebay|macy|nordstrom|ikea|home depot|lowe'?s|flipkart|myntra|retailers/i],
+    [/home|utilit|bills/i, /electric|energy|water|internet|comcast|xfinity|at&t|verizon|t-mobile|spectrum|jio|airtel/i],
+    [/health|medical|pharm/i, /cvs|walgreens|pharmacy|clinic|hospital|dental/i],
+  ];
+  function guessJar(name) {
+    const spend = state.buckets.filter((b) => !isSave(b));
+    const rule = importRules()[merchantKey(name)];
+    if (rule && spend.some((b) => b.id === rule)) return { id: rule, learned: true };
+    for (const [jarRe, merchRe] of MERCHANT_HINTS) {
+      if (!merchRe.test(name)) continue;
+      const b = sortedBuckets().find((x) => !isSave(x) && jarRe.test(x.name));
+      if (b) return { id: b.id, learned: false };
+    }
+    return null;
+  }
+  async function startImport() {
+    if (state.readOnly) return;
+    if (!state.buckets.length) { toast("Make a jar first, then import your statement."); return openBucket(); }
+    openSheet({ kind: "import", step: "how" });
+  }
+  async function pickStatement() {
+    try {
+      if (JT()) {
+        const r = await JT().openFile({ mime: "*/*", base64: true });
+        if (!r || !r.base64) return;
+        const bin = atob(r.base64), bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return readStatement(bytes, "Your statement");
+      }
+      $("importFile").click();
+    } catch { toast("Couldn't open that file."); }
+  }
+  async function readStatement(bytes, fileName) {
+    sheet.step = "reading"; renderSheet();
+    let res;
+    try {
+      const head = String.fromCharCode(...bytes.slice(0, 5));
+      if (head.startsWith("%PDF")) res = await pdfToTx(bytes);
+      else if (head.startsWith("PK")) res = { tx: [], error: "Excel files aren't supported yet. In your bank's app, choose CSV when you download." };
+      else res = csvToTx(new TextDecoder("utf-8").decode(bytes));
+    } catch (e) { res = { tx: [], error: "We couldn't read this file. Try downloading it again as CSV or PDF." }; }
+    if (!sheet || sheet.kind !== "import") return;
+    if (!res.tx.length) { sheet.step = "how"; sheet.error = res.error || "We didn't find any spends in this file."; return renderSheet(); }
+    // Mark spends already logged by hand (same amount within 3 days of the same date).
+    const used = new Set();
+    const tx = res.tx.map((t, i) => {
+      const name = cleanMerchant(t.desc), g = guessJar(name);
+      const dup = state.spends.find((s) => !used.has(s.id) && Math.abs((Number(s.amount) || 0) - t.amount) < 0.005 && Math.abs((parseDay(s.date) - parseDay(t.date)) / 864e5) <= 3);
+      if (dup) used.add(dup.id);
+      return { i, date: t.date, desc: t.desc, name, amount: t.amount, bucketId: g ? g.id : "", learned: !!(g && g.learned), on: !dup, dup: !!dup };
+    }).sort((a, b) => b.date.localeCompare(a.date));
+    const dates = tx.map((t) => t.date).sort();
+    Object.assign(sheet, { step: "review", tx, filter: "all", error: "", picking: null, meta: { file: fileName, from: dates[0], to: dates[dates.length - 1], total: tx.reduce((a, t) => a + t.amount, 0), stmtTotal: res.stmtTotal, skipped: res.skipped || 0 } });
+    renderSheet(true);
+  }
+  async function finishImport() {
+    const todo = sheet.tx.filter((t) => t.on && t.bucketId);
+    if (!todo.length) return;
+    const rules = importRules(); let learned = 0;
+    sheet.tx.forEach((t) => { if (t.remember && t.bucketId) { const k = merchantKey(t.name); if (k && rules[k] !== t.bucketId) { rules[k] = t.bucketId; learned++; } } });
+    lsSet("lj-import-rules", JSON.stringify(rules));
+    const months = {}; const now = Date.now();
+    const ok = await write(async () => {
+      for (const [k, t] of todo.entries()) {
+        await store.add("spends", { bucketId: t.bucketId, amount: t.amount, note: t.name, date: t.date, createdAt: now + k, src: "import" });
+        months[t.date.slice(0, 7)] = (months[t.date.slice(0, 7)] || 0) + 1;
+      }
+    });
+    closeSheet();
+    if (!ok) return;
+    state.month = Object.entries(months).sort((a, b) => b[1] - a[1])[0][0];
+    render(); chaChing();
+    toast(`📥 Imported ${todo.length} spend${todo.length === 1 ? "" : "s"}${learned ? ` · ${learned} shop${learned === 1 ? "" : "s"} remembered` : ""}`, 4000);
+    happyMoment();
+  }
+
   async function exportCsv() {
     const bmap = Object.fromEntries(state.buckets.map((b) => [b.id, b]));
     const q = (v) => { const s = String(v ?? ""); return /[",\n\r]/.test(s) || /^[=+\-@]/.test(s) ? `"${s.replace(/^([=+\-@])/, "'$1").replace(/"/g, '""')}"` : s; };
