@@ -639,6 +639,12 @@ button.flag-opt:hover { border-color: var(--accent); }
 .jar-pick.need { --c: var(--j5); }
 .tag { font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 2px 7px; margin-left: 6px; vertical-align: 1px; }
 .tag.dup { background: var(--bg); color: var(--muted); }
+.match { margin: -4px 12px 10px 42px; background: color-mix(in srgb, var(--j5) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--j5) 45%, var(--line)); border-radius: 12px; padding: 10px; display: grid; gap: 8px; }
+.match-q { font-size: .86rem; }
+.match-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.match-btns .btn { padding: 7px 10px; font-size: .8rem; background: var(--surface); }
+.match.done { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; font-size: .8rem; color: var(--muted); background: var(--bg); border-color: var(--line); }
+.match.done .link-btn { padding: 2px; font-size: .8rem; }
 .sum-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .88rem; color: var(--muted); }
 .sum-bar b { color: var(--ink); }
 .rate-faces { font-size: 2.6rem; text-align: center; letter-spacing: .1em; }
@@ -713,7 +719,7 @@ button.flag-opt:hover { border-color: var(--accent); }
 
 <script>
 (() => {
-  const APP_VERSION = "1.5.0";
+  const APP_VERSION = "1.5.1";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
@@ -2270,6 +2276,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     } else if (sheet.kind === "whatsnew") {
       const items = [
         ["📥", "<b>Import your bank statement:</b> add a whole month of spends from a PDF or CSV in one go. We sort them into jars, skip anything you already logged, and remember your shops. Settings → Your data."],
+        ["🤔", "<b>New: no more double counting.</b> If a statement line looks like a spend you already logged (same shop, or nearly the same amount, within a week), we ask: <i>\"Is this the Costco $84 you logged on Nov 1?\"</i> Keep yours, use the statement's exact amount, or keep both."],
         ["🔒", "Your statement is read right on your phone and never uploaded."],
         ...(PT() ? [["🛟", "<b>Safer partner sync:</b> a phone with an older copy can no longer wipe out newer spends. And if a sync ever goes wrong, <b>Undo the last sync</b> brings everything back (Settings → Share with partner)."]] : []),
         ["🙌", "<b>You asked, we fixed:</b>"],
@@ -2360,20 +2367,22 @@ button.flag-opt:hover { border-color: var(--accent); }
       } else {
         const tx = sheet.tx, m = sheet.meta;
         const need = tx.filter((t) => t.on && !t.bucketId).length, dups = tx.filter((t) => t.dup).length;
-        const shown = tx.filter((t) => sheet.filter === "pick" ? !t.bucketId : sheet.filter === "dup" ? t.dup : true);
+        const checks = tx.filter((t) => t.maybe).length, open = tx.filter((t) => t.maybe && !t.resolve).length;
+        const shown = tx.filter((t) => sheet.filter === "pick" ? !t.bucketId : sheet.filter === "dup" ? t.dup : sheet.filter === "maybe" ? t.maybe : true);
         const todo = tx.filter((t) => t.on && t.bucketId), sum = todo.reduce((a, t) => a + t.amount, 0);
         const match = m.stmtTotal && Math.abs(m.stmtTotal - m.total) < 0.01;
         html = `${head("Check your spends")}
           <div class="found"><span aria-hidden="true">🧾</span><div class="row-main"><b>We found ${tx.length} spend${tx.length === 1 ? "" : "s"} 🎉</b>
             <div class="row-meta">${esc(shortDate(m.from))} – ${esc(shortDate(m.to))} · ${esc(money(m.total))}${match ? " · matches your statement ✓" : ""}${m.skipped ? ` · ${m.skipped} payment${m.skipped === 1 ? "" : "s"}/refund${m.skipped === 1 ? "" : "s"} left out` : ""}</div></div></div>
-          <div class="tabs">${[["all", `All ${tx.length}`], ["pick", `Pick a jar ${tx.filter((t) => !t.bucketId).length}`], ["dup", `Already logged ${dups}`]].map(([f, l]) => `<button class="tab ${sheet.filter === f ? "on" : ""}" data-imp-filter="${f}">${l}</button>`).join("")}</div>
+          <div class="tabs">${[...(checks ? [["maybe", `Check ${open ? `⚠️ ${open}` : "✓"}`]] : []), ["all", `All ${tx.length}`], ["pick", `Pick a jar ${tx.filter((t) => !t.bucketId).length}`], ["dup", `Already logged ${dups}`]].map(([f, l]) => `<button class="tab ${sheet.filter === f ? "on" : ""}" data-imp-filter="${f}">${l}</button>`).join("")}</div>
           <div class="imp-list">${shown.length ? shown.map((t) => { const b = state.buckets.find((x) => x.id === t.bucketId); return `<div class="imp-row ${t.on ? "" : "off"} ${t.dup ? "dup" : ""}">
             <input type="checkbox" data-imp-on="${t.i}" ${t.on ? "checked" : ""} aria-label="Import ${esc(t.name)}">
             <div class="row-main"><div class="t">${esc(t.name)}${t.dup ? '<span class="tag dup">Already logged</span>' : ""}</div><div class="m">${esc(shortDate(t.date))}</div>
               <button class="jar-pick ${b ? "" : "need"}" data-imp-pick="${t.i}" style="${b ? `--c:${bucketColor(b)}` : ""}">${b ? `${esc(b.emoji || "🫙")} ${esc(b.name)}` : "Pick a jar"} ▾</button></div>
-            <div class="amt num">${esc(money(t.amount))}</div></div>`; }).join("") : `<div class="empty">Nothing here.</div>`}</div>
-          <div class="sum-bar"><span><b>${todo.length}</b> to import · <b>${esc(money(sum))}</b></span>${need ? `<span>${need} need a jar</span>` : ""}</div>
-          <div class="actions"><button class="btn primary" data-imp-go ${todo.length ? "" : "disabled"}>Import ${todo.length} spend${todo.length === 1 ? "" : "s"}</button></div>`;
+            <div class="amt num">${esc(money(t.amount))}</div></div>${t.maybe ? matchBox(t) : ""}`; }).join("") : `<div class="empty">Nothing here.</div>`}</div>
+          <div class="sum-bar"><span><b>${todo.length}</b> to import · <b>${esc(money(sum))}</b></span>${open ? `<span>${open} to check</span>` : need ? `<span>${need} need a jar</span>` : ""}</div>
+          ${open ? `<div class="row-meta" style="margin-top:-8px">Unchecked possible matches are skipped, so nothing gets counted twice.</div>` : ""}
+          <div class="actions"><button class="btn primary" data-imp-go ${todo.length || tx.some((t) => t.resolve === "theirs") ? "" : "disabled"}>${todo.length ? `Import ${todo.length} spend${todo.length === 1 ? "" : "s"}` : tx.some((t) => t.resolve === "theirs") ? "Save changes" : open ? `Answer the ${open === 1 ? "check" : `${open} checks`} above` : "Import 0 spends"}</button></div>`;
       }
     } else if (sheet.kind === "rules") {
       const rules = Object.entries(importRules());
@@ -2494,7 +2503,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (t.id === "curSel") { setCurrencyCode(t.value); prefs.currency = currency.code; savePrefs(); render(); renderSheet(); }
     if (t.id === "soundToggle") { prefs.sound = t.checked; savePrefs(); if (prefs.sound) chaChing(); }
     if (t.id === "remToggle") { if (t.checked) enableReminder(); else { prefs.reminder.on = false; savePrefs(); syncReminder(); } renderSheet(); }
-    if (t.dataset && t.dataset.impOn !== undefined && sheet && sheet.kind === "import") { const x = sheet.tx.find((v) => v.i === Number(t.dataset.impOn)); x.on = t.checked; renderSheet(); }
+    if (t.dataset && t.dataset.impOn !== undefined && sheet && sheet.kind === "import") { const x = sheet.tx.find((v) => v.i === Number(t.dataset.impOn)); x.on = t.checked; if (x.maybe) x.resolve = t.checked ? "both" : null; renderSheet(); }
     if (t.id === "impRemember" && sheet && sheet.kind === "import") { const x = sheet.tx.find((v) => v.i === sheet.picking); x.remember = t.checked; }
     if (t.id === "spRepeat") { sheet.repeat = t.checked; renderSheet(); }
     if (t.id === "bkRoll") { sheet.draft.rollover = t.checked; renderSheet(); }
@@ -2592,6 +2601,8 @@ button.flag-opt:hover { border-color: var(--accent); }
     }
     if (t.matches("[data-imp-done]")) { sheet.picking = null; return renderSheet(true); }
     if (t.matches("[data-imp-go]")) return finishImport();
+    if (t.dataset.impRes) { const x = sheet.tx.find((v) => v.i === Number(t.dataset.i)); x.resolve = t.dataset.impRes; x.on = x.resolve === "both"; return renderSheet(); }
+    if (t.dataset.impUndo) { const x = sheet.tx.find((v) => v.i === Number(t.dataset.impUndo)); x.resolve = null; x.on = false; return renderSheet(); }
     if (t.matches("[data-rate-store]")) { try { await JT().openStore(); } catch { toast("Couldn't open Google Play."); } return; }
     if (t.matches("[data-rate-yes]")) { lsSet("lj-rate", "done"); closeSheet(); try { await JT().requestReview(); } catch { try { await JT().openStore(); } catch {} } return; }
     if (t.matches("[data-rate-no]")) { lsSet("lj-rate", "done"); return openSheet({ kind: "feature", feedback: true }); }
@@ -3076,6 +3087,17 @@ button.flag-opt:hover { border-color: var(--accent); }
     }
     return null;
   }
+  // "Is this the Costco $84 you logged on Nov 1?" for a possible match.
+  function matchBox(t) {
+    const m = t.maybe, b = state.buckets.find((x) => x.id === m.bucketId);
+    const mine = `${m.note ? esc(m.note) : b ? esc(b.name) : "spend"} ${esc(money(m.amount))}`;
+    if (t.resolve) {
+      const label = { mine: `Kept yours (${mine})`, theirs: `Your ${mine} will update to ${esc(money(t.amount))} on ${esc(shortDate(t.date))}`, both: "Keeping both" }[t.resolve];
+      return `<div class="match done"><span>✓ ${label}</span><button class="link-btn" data-imp-undo="${t.i}">Change</button></div>`;
+    }
+    return `<div class="match"><div class="match-q">🤔 Is this the <b>${mine}</b> you logged on ${esc(shortDate(m.date))}?</div>
+      <div class="match-btns"><button class="btn" data-imp-res="mine" data-i="${t.i}">Keep mine</button><button class="btn" data-imp-res="theirs" data-i="${t.i}">Use statement's</button><button class="btn" data-imp-res="both" data-i="${t.i}">Keep both</button></div></div>`;
+  }
   async function startImport() {
     if (state.readOnly) return;
     if (!state.buckets.length) { toast("Make a jar first, then import your statement."); return openBucket(); }
@@ -3104,26 +3126,45 @@ button.flag-opt:hover { border-color: var(--accent); }
     } catch (e) { res = { tx: [], error: "We couldn't read this file. Try downloading it again as CSV or PDF." }; }
     if (!sheet || sheet.kind !== "import") return;
     if (!res.tx.length) { sheet.step = "how"; sheet.error = res.error || "We didn't find any spends in this file."; return renderSheet(); }
-    // Mark spends already logged by hand (same amount within 3 days of the same date).
-    const used = new Set();
-    const tx = res.tx.map((t, i) => {
-      const name = cleanMerchant(t.desc), g = guessJar(name);
-      const dup = state.spends.find((s) => !used.has(s.id) && Math.abs((Number(s.amount) || 0) - t.amount) < 0.005 && Math.abs((parseDay(s.date) - parseDay(t.date)) / 864e5) <= 3);
-      if (dup) used.add(dup.id);
-      return { i, date: t.date, desc: t.desc, name, amount: t.amount, bucketId: g ? g.id : "", learned: !!(g && g.learned), on: !dup, dup: !!dup };
-    }).sort((a, b) => b.date.localeCompare(a.date));
+    // Cross-check with spends already in the app. First, exact matches (same amount within 3 days) are
+    // "Already logged". Then "possible matches": the same shop, or an amount within about a dollar,
+    // within a week. Those wait for you to decide: keep yours, use the statement's, or keep both.
+    const used = new Set(), days = (a, b) => Math.abs((parseDay(a) - parseDay(b)) / 864e5);
+    const tx = res.tx.map((t, i) => { const name = cleanMerchant(t.desc), g = guessJar(name); return { i, date: t.date, desc: t.desc, name, amount: t.amount, bucketId: g ? g.id : "", learned: !!(g && g.learned), on: true, dup: false }; });
+    tx.forEach((t) => {
+      const dup = state.spends.find((s) => !used.has(s.id) && Math.abs((Number(s.amount) || 0) - t.amount) < 0.005 && days(s.date, t.date) <= 3);
+      if (dup) { used.add(dup.id); t.dup = true; t.on = false; }
+    });
+    const words = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    tx.filter((t) => !t.dup).forEach((t) => {
+      const key = words(merchantKey(t.name));
+      const cands = state.spends.filter((s) => !used.has(s.id) && s.src !== "import" && days(s.date, t.date) <= 7).map((s) => {
+        const amt = Number(s.amount) || 0, diff = Math.abs(amt - t.amount);
+        const sameShop = key.length >= 3 && words(s.note).includes(key);
+        const close = diff <= Math.max(1, t.amount * 0.02);
+        const ok = close || (sameShop && diff <= t.amount * 0.3);
+        return ok ? { s, score: (sameShop ? 0 : 50) + diff + days(s.date, t.date) } : null;
+      }).filter(Boolean).sort((a, b) => a.score - b.score);
+      if (cands.length) {
+        const s = cands[0].s; used.add(s.id);
+        t.maybe = { id: s.id, amount: Number(s.amount) || 0, date: s.date, note: s.note || "", bucketId: s.bucketId };
+        t.on = false; t.resolve = null;
+      }
+    });
+    tx.sort((a, b) => b.date.localeCompare(a.date));
     const dates = tx.map((t) => t.date).sort();
     Object.assign(sheet, { step: "review", tx, filter: "all", error: "", picking: null, meta: { file: fileName, from: dates[0], to: dates[dates.length - 1], total: tx.reduce((a, t) => a + t.amount, 0), stmtTotal: res.stmtTotal, skipped: res.skipped || 0 } });
     renderSheet(true);
   }
   async function finishImport() {
-    const todo = sheet.tx.filter((t) => t.on && t.bucketId);
-    if (!todo.length) return;
+    const todo = sheet.tx.filter((t) => t.on && t.bucketId), fixes = sheet.tx.filter((t) => t.maybe && t.resolve === "theirs");
+    if (!todo.length && !fixes.length) return;
     const rules = importRules(); let learned = 0;
     sheet.tx.forEach((t) => { if (t.remember && t.bucketId) { const k = merchantKey(t.name); if (k && rules[k] !== t.bucketId) { rules[k] = t.bucketId; learned++; } } });
     lsSet("lj-import-rules", JSON.stringify(rules));
     const months = {}; const now = Date.now();
     const ok = await write(async () => {
+      for (const t of fixes) await store.update("spends", t.maybe.id, { amount: t.amount, date: t.date });
       for (const [k, t] of todo.entries()) {
         await store.add("spends", { bucketId: t.bucketId, amount: t.amount, note: t.name, date: t.date, createdAt: now + k, src: "import" });
         months[t.date.slice(0, 7)] = (months[t.date.slice(0, 7)] || 0) + 1;
@@ -3131,9 +3172,10 @@ button.flag-opt:hover { border-color: var(--accent); }
     });
     closeSheet();
     if (!ok) return;
-    state.month = Object.entries(months).sort((a, b) => b[1] - a[1])[0][0];
+    const top = Object.entries(months).sort((a, b) => b[1] - a[1])[0];
+    if (top) state.month = top[0];
     render(); chaChing();
-    toast(`📥 Imported ${todo.length} spend${todo.length === 1 ? "" : "s"}${learned ? ` · ${learned} shop${learned === 1 ? "" : "s"} remembered` : ""}`, 4000);
+    toast(`📥 Imported ${todo.length} spend${todo.length === 1 ? "" : "s"}${fixes.length ? ` · ${fixes.length} updated to match` : ""}${learned ? ` · ${learned} shop${learned === 1 ? "" : "s"} remembered` : ""}`, 4500);
     happyMoment();
   }
 
