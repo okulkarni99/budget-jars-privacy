@@ -820,7 +820,7 @@ button.flag-opt:hover { border-color: var(--accent); }
 
 <script>
 (() => {
-  const APP_VERSION = "1.6.0";
+  const APP_VERSION = "1.7.0";
   const SUPPORT_EMAIL = "littlejarsapp@gmail.com";
   const MAX_AMOUNT = 9999999.99;
   const EMOJIS = ["🛒","🍜","🍕","☕","⛽","🚗","🏠","💡","🛍️","👗","🎉","🎬","🎮","✈️","🐾","💊","🏋️","📚","🎁","👶","💇","📱","🍷","🌱",
@@ -1088,6 +1088,7 @@ button.flag-opt:hover { border-color: var(--accent); }
     lsSet("lj-reminder", JSON.stringify(prefs.reminder));
     lsSet("lj-mid", prefs.mid ? "on" : "off");
     mirrorSoon();
+    if (typeof syncWidget === "function") setTimeout(syncWidget, 0);
     if (store && store.savePrefs && !state.readOnly) write(() => store.savePrefs({ theme: prefs.theme, display: prefs.display, currency: prefs.currency, sound: prefs.sound, festive: prefs.festive }));
   }
 
@@ -1315,14 +1316,20 @@ button.flag-opt:hover { border-color: var(--accent); }
     if (document.visibilityState !== "visible") return;
     handleReminderTap();
     applySkin();
-    if (state.loaded.buckets && state.loaded.spends) { if (state.month > curMonth()) state.month = curMonth(); render(); nextPrompt("resume"); }
+    if (state.loaded.buckets && state.loaded.spends) { if (state.month > curMonth()) state.month = curMonth(); render(); nextPrompt("resume"); syncWidget(); }
     startAutoSync();
   });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && psync.mode === "sync") stopPartner(); });
   let changeTimer;
   function dataChanged() {
     clearTimeout(changeTimer);
-    changeTimer = setTimeout(() => { checkStickers(); syncReminderSoon(); snapshotMonth(); }, 600);
+    changeTimer = setTimeout(() => { checkStickers(); syncReminderSoon(); snapshotMonth(); syncWidget(); }, 600);
+  }
+  // Home screen widgets (Android): only this month's left-to-spend and total limit leave the web app.
+  function syncWidget() {
+    const rm = RM(); if (!rm || !rm.setWidget || !state.loaded.buckets || !state.loaded.spends) return;
+    const m = monthStats(curMonth());
+    rm.setWidget({ left: Math.round(m.left * 100) / 100, limit: m.limit, month: curMonth(), code: currency.code, locale: currency.locale }).catch(() => {});
   }
 
   /* ---------- derived ---------- */
@@ -2466,6 +2473,7 @@ button.flag-opt:hover { border-color: var(--accent); }
         <div class="actions"><button class="btn" data-setup="back">Back</button><button class="btn primary" data-setup="create">${(() => { const n = sheet.picks.filter((p) => p.on).length; return n ? `Make ${n} jar${n === 1 ? "" : "s"}` : "Pick a jar"; })()}</button></div>`;
     } else if (sheet.kind === "whatsnew") {
       const items = [
+        ...(IS_NATIVE ? [["📱", "<b>Home screen widgets:</b> see what's left to spend without opening the app, or tap <b>＋ Add spend</b> right from your home screen. Long-press your home screen → Widgets → Little Jars."]] : []),
         ["📄", "<b>New theme: Paper.</b> Crumpled paper, soft pastel jars and handwritten numbers. One big number tells you what's left, your jars sit three across, and little wins show up when you earn them. Settings → Theme."],
         ["🎯", "<b>Goal jars:</b> save up for something by a date, like a trip or a new phone. We work out how much to put aside each month and show how close you are."],
         ["🫙", "Bills jars (the old saving jars) work just like before."],
