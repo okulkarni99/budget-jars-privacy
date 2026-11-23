@@ -1,10 +1,11 @@
 // Offline cache for the web version. Bump VERSION whenever app files change.
-const VERSION = "little-jars-v1.5.1";
+const VERSION = "little-jars-v1.6.0";
 const FILES = [
   "./", "index.html", "privacy.html", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
   "fonts/fredoka-latin-500-normal.woff2", "fonts/fredoka-latin-600-normal.woff2", "fonts/fredoka-latin-700-normal.woff2",
   "fonts/figtree-latin-400-normal.woff2", "fonts/figtree-latin-500-normal.woff2", "fonts/figtree-latin-600-normal.woff2", "fonts/figtree-latin-700-normal.woff2",
+  "fonts/kalam-latin-400-normal.woff2", "fonts/kalam-latin-700-normal.woff2",
 ];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
